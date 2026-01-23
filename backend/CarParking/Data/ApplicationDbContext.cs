@@ -1,20 +1,16 @@
 ﻿using CarParking.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CarParking.Data
 {
-    public class ApplicationDbContext : IdentityDbContext
-        ApplicationUser,
-        IdentityRole<Guid>,
-        Guid>  // Specify Guid for all Identity types
+    public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
 
+        public DbSet<User> Users { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<ParkingRate> ParkingRates { get; set; }
@@ -23,7 +19,12 @@ namespace CarParking.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure Vehicle relationships
+            // User email unique constraint
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            // Vehicle relationships
             modelBuilder.Entity<Vehicle>()
                 .HasOne(v => v.User)
                 .WithMany(u => u.Vehicles)

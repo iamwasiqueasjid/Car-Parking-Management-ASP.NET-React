@@ -20,10 +20,10 @@ namespace CarParking.Models
 
         public bool IsPaid { get; set; } = false;
 
-        public string? UserId { get; set; }
+        public int? UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public ApplicationUser? User { get; set; }
+        public User? User { get; set; }
 
         public string? Zone { get; set; }
 
