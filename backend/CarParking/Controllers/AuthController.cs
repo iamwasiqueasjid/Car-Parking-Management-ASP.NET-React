@@ -31,7 +31,6 @@ namespace CarParking.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Check if email already exists
             var existingUser = await _dbContext.Users
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -40,7 +39,6 @@ namespace CarParking.Controllers
                 return BadRequest(new { message = "Email already registered" });
             }
 
-            // Create new user
             var user = new User
             {
                 Email = dto.Email,
@@ -82,7 +80,6 @@ namespace CarParking.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Find user by email
             var user = await _dbContext.Users
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -91,7 +88,6 @@ namespace CarParking.Controllers
                 return Unauthorized(new { message = "Invalid email or password" });
             }
 
-            // Verify password
             if (!_authService.VerifyPassword(dto.Password, user.PasswordHash))
             {
                 return Unauthorized(new { message = "Invalid email or password" });
@@ -162,7 +158,7 @@ namespace CarParking.Controllers
 
         [HttpPut("change-password")]
         [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -178,13 +174,11 @@ namespace CarParking.Controllers
                 return NotFound(new { message = "User not found" });
             }
 
-            // Verify old password
             if (!_authService.VerifyPassword(dto.OldPassword, user.PasswordHash))
             {
                 return BadRequest(new { message = "Current password is incorrect" });
             }
 
-            // Update password
             user.PasswordHash = _authService.HashPassword(dto.NewPassword);
             await _dbContext.SaveChangesAsync();
 
@@ -192,14 +186,5 @@ namespace CarParking.Controllers
         }
     }
 
-    // Add this DTO for change password
-    public class ChangePasswordDto
-    {
-        [Required]
-        public string OldPassword { get; set; }
 
-        [Required]
-        [MinLength(6)]
-        public string NewPassword { get; set; }
-    }
 }

@@ -1,8 +1,7 @@
-﻿using Azure.Core;
-using CarParking.Data;
+﻿using CarParking.Data;
 using CarParking.DTOs;
 using CarParking.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,23 +9,28 @@ namespace CarParking.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PaymentController : ControllerBase
     {
-        private readonly ApplicationDbContext dbContext;
+        private readonly ApplicationDbContext _dbContext;
 
-        public PaymentController(ApplicationDbContext _dbContext)
+        public PaymentController(ApplicationDbContext dbContext)
         {
-            dbContext = _dbContext;
+            _dbContext = dbContext;
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPaymentById(int id)
         {
-            var payment = await dbContext.Payments.FindAsync(id);
+            var payment = await _dbContext.Payments
+                .Include(p => p.Vehicle)
+                .FirstOrDefaultAsync(p => p.PaymentId == id);
+
             if (payment == null)
             {
                 return NotFound(new { success = false, message = "Payment not found" });
             }
+
             return Ok(payment);
         }
 
@@ -35,7 +39,7 @@ namespace CarParking.Controllers
         {
             vrm = vrm.Replace(" ", "").ToLower();
 
-            var vehicle = await dbContext.Vehicles
+            var vehicle = await _dbContext.Vehicles
                 .Where(v => v.VRM == vrm && v.ExitTime != null)
                 .OrderByDescending(v => v.ExitTime)
                 .FirstOrDefaultAsync();
@@ -49,7 +53,7 @@ namespace CarParking.Controllers
                 });
             }
 
-            if (vehicle.IsPaid == true)
+            if (vehicle.IsPaid)
             {
                 return BadRequest(new
                 {
@@ -83,13 +87,14 @@ namespace CarParking.Controllers
             {
                 VehicleId = vehicle.VehicleId,
                 Amount = processPayment.Amount,
-                PaymentTime = DateTime.Now,
+                PaymentTime = DateTime.UtcNow,
                 PaymentMethod = paymentMethod,
             };
 
             vehicle.IsPaid = true;
-            await dbContext.Payments.AddAsync(payment);
-            await dbContext.SaveChangesAsync();
+
+            await _dbContext.Payments.AddAsync(payment);
+            await _dbContext.SaveChangesAsync();
 
             return Ok(new
             {
@@ -100,6 +105,75 @@ namespace CarParking.Controllers
                 paymentMethod = payment.PaymentMethod,
                 paymentTime = payment.PaymentTime
             });
+        }
+
+        [HttpGet("payment-summary")]
+        [Authorize(Policy = "OwnerOnly")]
+        public async Task<IActionResult> GetPaymentSummary()
+        {
+            var today = DateTime.UtcNow.Date;
+
+            var paidToday = await _dbContext.Payments
+                .Where(p => p.PaymentTime.Date == today)
+                .SumAsync(p => p.Amount);
+
+            var pendingPayments = await _dbContext.Vehicles
+                .Where(v => v.ExitTime != null && !v.IsPaid)
+                .SumAsync(v => v.ParkingFee ?? 0);
+
+            var totalPaid = await _dbContext.Payments
+                .Where(p => p.PaymentTime.Date == today)
+                .CountAsync();
+
+            var totalPending = await _dbContext.Vehicles
+                .Where(v => v.ExitTime != null && !v.IsPaid)
+                .CountAsync();
+
+            return Ok(new
+            {
+                paidTransactions = new
+                {
+                    amount = paidToday,
+                    count = totalPaid,
+                    status = "Paid"
+                },
+                pendingTransactions = new
+                {
+                    amount = pendingPayments,
+                    count = totalPending,
+                    status = "Pending"
+                },
+                totalRevenue = paidToday
+            });
+        }
+
+        [HttpGet("weekly-revenue")]
+        [Authorize(Policy = "OwnerOnly")]
+        public async Task<IActionResult> GetWeeklyRevenue()
+        {
+            var today = DateTime.UtcNow.Date;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+
+            var weeklyData = await _dbContext.Payments
+                .Where(p => p.PaymentTime >= startOfWeek)
+                .GroupBy(p => p.PaymentTime.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Sum(p => p.Amount)
+                })
+                .ToListAsync();
+
+            var result = Enumerable.Range(0, 7)
+                .Select(i => startOfWeek.AddDays(i))
+                .Select(date => new
+                {
+                    Day = date.DayOfWeek.ToString(),
+                    Revenue = weeklyData.FirstOrDefault(w => w.Date == date)?.Revenue ?? 0
+                })
+                .ToList();
+
+            return Ok(result);
         }
     }
 }
