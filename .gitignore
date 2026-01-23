@@ -1,0 +1,12 @@
+# React
+frontend/node_modules
+frontend/build
+
+# ASP.NET
+backend/**/bin
+backend/**/obj
+**/.vs
+
+# IDE
+.vscode
+*.user
