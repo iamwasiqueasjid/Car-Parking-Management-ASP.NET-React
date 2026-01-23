@@ -6,6 +6,11 @@ namespace CarParking.Models
     {
         [Key]
         public int RateId { get; set; }
+
         public decimal HourlyRate { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public bool IsActive { get; set; } = true;
     }
 }
