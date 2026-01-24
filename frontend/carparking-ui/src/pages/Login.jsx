@@ -41,26 +41,12 @@ function Login() {
             <div className="form-group">
               <label>Email Address</label>
               <div className="input-with-icon">
-                <svg
+                <img
+                  src="/SVG/Shared/Email.svg"
+                  alt="Email"
                   width="20"
                   height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3 4H17C17.55 4 18 4.45 18 5V15C18 15.55 17.55 16 17 16H3C2.45 16 2 15.55 2 15V5C2 4.45 2.45 4 3 4Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                  <path
-                    d="M18 5L10 11L2 5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </svg>
+                />
                 <input
                   type="email"
                   name="email"
@@ -100,25 +86,16 @@ function Login() {
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <svg
+                  <img
+                    src={
+                      showPassword
+                        ? "/SVG/Shared/show.svg"
+                        : "/SVG/Shared/hide.svg"
+                    }
+                    alt={showPassword ? "Hide password" : "Show password"}
                     width="20"
                     height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    {showPassword ? (
-                      <path
-                        d="M10 4C5.5 4 2 10 2 10s3.5 6 8 6 8-6 8-6-3.5-6-8-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4zm0-6.5c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5z"
-                        fill="currentColor"
-                      />
-                    ) : (
-                      <path
-                        d="M10 7c2.8 0 5 2.2 5 5 0 .7-.1 1.3-.4 1.9l2.9 2.9c1.5-1.3 2.7-3 3.4-4.8-1.6-4-5.3-7-9.9-7-1.3 0-2.5.2-3.6.6l2.1 2.1c.5-.2 1-.3 1.5-.3zm-8-2.7l2.3 2.3.5.5C3.2 8.4 2 10.1 1.1 12c1.6 4 5.3 7 9.9 7 1.4 0 2.7-.3 3.9-.7l.4.4 3 3 1.3-1.3L3.3 2.7 2 4zm5.5 5.5l1.5 1.5c0-.1 0-.3 0-.5 0-1.1.9-2 2-2 .2 0 .3 0 .5 0l1.5 1.5c-.4-.9-1.3-1.5-2.3-1.5-1.4 0-2.5 1.1-2.5 2.5 0 1 .6 1.9 1.5 2.3z"
-                        fill="currentColor"
-                      />
-                    )}
-                  </svg>
+                  />
                 </button>
               </div>
             </div>

@@ -50,26 +50,12 @@ function Register() {
             <div className="form-group">
               <label>Email Address</label>
               <div className="input-with-icon">
-                <svg
+                <img
+                  src="/SVG/Shared/Email.svg"
+                  alt="Email"
                   width="20"
                   height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3 4H17C17.55 4 18 4.45 18 5V15C18 15.55 17.55 16 17 16H3C2.45 16 2 15.55 2 15V5C2 4.45 2.45 4 3 4Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                  <path
-                    d="M18 5L10 11L2 5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </svg>
+                />
                 <input
                   type="email"
                   name="email"
@@ -136,25 +122,16 @@ function Register() {
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <svg
+                  <img
+                    src={
+                      showPassword
+                        ? "/SVG/Shared/show.svg"
+                        : "/SVG/Shared/hide.svg"
+                    }
+                    alt={showPassword ? "Hide password" : "Show password"}
                     width="20"
                     height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    {showPassword ? (
-                      <path
-                        d="M10 4C5.5 4 2 10 2 10s3.5 6 8 6 8-6 8-6-3.5-6-8-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4zm0-6.5c-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5-1.1-2.5-2.5-2.5z"
-                        fill="currentColor"
-                      />
-                    ) : (
-                      <path
-                        d="M10 7c2.8 0 5 2.2 5 5 0 .7-.1 1.3-.4 1.9l2.9 2.9c1.5-1.3 2.7-3 3.4-4.8-1.6-4-5.3-7-9.9-7-1.3 0-2.5.2-3.6.6l2.1 2.1c.5-.2 1-.3 1.5-.3zm-8-2.7l2.3 2.3.5.5C3.2 8.4 2 10.1 1.1 12c1.6 4 5.3 7 9.9 7 1.4 0 2.7-.3 3.9-.7l.4.4 3 3 1.3-1.3L3.3 2.7 2 4zm5.5 5.5l1.5 1.5c0-.1 0-.3 0-.5 0-1.1.9-2 2-2 .2 0 .3 0 .5 0l1.5 1.5c-.4-.9-1.3-1.5-2.3-1.5-1.4 0-2.5 1.1-2.5 2.5 0 1 .6 1.9 1.5 2.3z"
-                        fill="currentColor"
-                      />
-                    )}
-                  </svg>
+                  />
                 </button>
               </div>
             </div>
@@ -162,18 +139,12 @@ function Register() {
             <div className="form-group">
               <label>Phone No</label>
               <div className="input-with-icon">
-                <svg
+                <img
+                  src="/SVG/signup/Phone.svg"
+                  alt="Phone"
                   width="20"
                   height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M16.5 18C14.3 18 12.1 17.3 10.2 16.1C8.3 14.8 6.7 13.2 5.4 11.3C4.1 9.4 3.4 7.2 3.4 5C3.4 4.7 3.5 4.5 3.7 4.3C3.9 4.1 4.1 4 4.4 4H7.4C7.6 4 7.8 4.1 8 4.2C8.1 4.3 8.2 4.5 8.3 4.7L9 7.3C9 7.5 9 7.7 9 7.8C9 8 8.9 8.1 8.8 8.2L7 9.9C7.5 10.7 8.1 11.4 8.8 12.1C9.5 12.8 10.2 13.4 11 13.9L12.7 12.2C12.8 12.1 13 12 13.2 12C13.3 12 13.5 12 13.7 12.1L16.2 12.8C16.4 12.9 16.6 13 16.7 13.2C16.8 13.4 16.9 13.6 16.9 13.8V16.8C16.9 17.1 16.8 17.3 16.6 17.5C16.4 17.7 16.2 17.8 15.9 17.8C15.8 18 15.7 18 15.5 18Z"
-                    fill="currentColor"
-                  />
-                </svg>
+                />
                 <input
                   type="tel"
                   name="phoneNumber"
