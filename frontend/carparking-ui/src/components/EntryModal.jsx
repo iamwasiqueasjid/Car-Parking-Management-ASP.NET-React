@@ -79,7 +79,7 @@ function EntryModal({ isOpen, onClose }) {
                   name="zone"
                   value={formData.zone}
                   onChange={handleChange}
-                  placeholder="e.g., A1, B2"
+                  placeholder="e.g., A, B"
                 />
               </div>
               <div className="d-flex justify-content-end gap-2">
