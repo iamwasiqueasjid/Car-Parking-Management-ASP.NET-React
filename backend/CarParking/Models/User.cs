@@ -28,7 +28,6 @@ namespace CarParking.Models
 
         public bool IsActive { get; set; } = true;
 
-        // Navigation properties
         public ICollection<Vehicle> Vehicles { get; set; }
     }
 

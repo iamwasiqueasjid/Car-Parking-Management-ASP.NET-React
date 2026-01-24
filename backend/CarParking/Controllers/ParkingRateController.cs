@@ -1,6 +1,6 @@
 ﻿using CarParking.Data;
 using CarParking.Models;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,32 +10,92 @@ namespace CarParking.Controllers
     [ApiController]
     public class ParkingRateController : ControllerBase
     {
-        private readonly ApplicationDbContext dbContext;
+        private readonly ApplicationDbContext _dbContext;
 
-        public ParkingRateController(ApplicationDbContext _dbContext)
+        public ParkingRateController(ApplicationDbContext dbContext)
         {
-            dbContext = _dbContext;
+            _dbContext = dbContext;
         }
 
         [HttpGet("get-rates")]
-        public async Task<IActionResult> getRates()
+        public async Task<IActionResult> GetRates()
         {
-            var rates = await dbContext.ParkingRates.ToListAsync();
+            var rates = await _dbContext.ParkingRates
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
             return Ok(rates);
         }
 
-        [HttpPost("add-rate")]
-        public async Task<IActionResult> addRate(decimal HourlyRate)
+        [HttpGet("current-rate")]
+        public async Task<IActionResult> GetCurrentRate()
         {
-            var ParkingRate = new ParkingRate()
+            var currentRate = await _dbContext.ParkingRates
+                .Where(r => r.IsActive)
+                .OrderByDescending(r => r.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (currentRate == null)
             {
-                HourlyRate = HourlyRate
-            };
-            await dbContext.ParkingRates.AddAsync(ParkingRate);
-            await dbContext.SaveChangesAsync();
-            return Ok(ParkingRate);
+                return NotFound(new { message = "No active rate found" });
+            }
+
+            return Ok(currentRate);
         }
 
+        [HttpPost("add-rate")]
+        [Authorize(Policy = "OwnerOnly")]
+        public async Task<IActionResult> AddRate(decimal HourlyRate)
+        {
+            if (HourlyRate <= 0)
+            {
+                return BadRequest(new { message = "Hourly rate must be greater than 0" });
+            }
 
+            // Use transaction to ensure consistency
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            
+            try
+            {
+                // Deactivate old rates
+                var existingRates = await _dbContext.ParkingRates
+                    .Where(r => r.IsActive)
+                    .ToListAsync();
+
+                foreach (var rate in existingRates)
+                {
+                    rate.IsActive = false;
+                }
+
+                var parkingRate = new ParkingRate()
+                {
+                    HourlyRate = HourlyRate,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+
+                await _dbContext.ParkingRates.AddAsync(parkingRate);
+                await _dbContext.SaveChangesAsync();
+                
+                await transaction.CommitAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Rate updated successfully",
+                    rate = parkingRate
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Failed to update rate",
+                    error = ex.Message
+                });
+            }
+        }
     }
 }

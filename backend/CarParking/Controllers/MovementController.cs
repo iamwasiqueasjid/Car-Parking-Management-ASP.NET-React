@@ -32,11 +32,25 @@ namespace CarParking.Controllers
                 userId = parsedUserId;
             }
 
+            // Validate zone if provided
+            if (!string.IsNullOrWhiteSpace(addVehicleDTO.Zone))
+            {
+                var validZones = new[] { "A", "B", "C", "VIP" };
+                if (!validZones.Contains(addVehicleDTO.Zone.ToUpper()))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = $"Invalid zone. Valid zones are: {string.Join(", ", validZones)}"
+                    });
+                }
+            }
+
             var vehicle = new Vehicle()
             {
                 VRM = addVehicleDTO.VRM.Replace(" ", "").ToLower(),
                 EntryTime = DateTime.UtcNow,
-                Zone = addVehicleDTO.Zone,
+                Zone = addVehicleDTO.Zone?.ToUpper(),
                 UserId = userId
             };
 
@@ -75,11 +89,17 @@ namespace CarParking.Controllers
                 .OrderByDescending(r => r.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            if (parkingRate != null)
+            if (parkingRate == null)
             {
-                var duration = (vehicle.ExitTime.Value - vehicle.EntryTime).TotalHours;
-                vehicle.ParkingFee = (decimal)Math.Ceiling(duration) * parkingRate.HourlyRate;
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "No active parking rate found. Please contact administrator."
+                });
             }
+
+            var duration = (vehicle.ExitTime.Value - vehicle.EntryTime).TotalHours;
+            vehicle.ParkingFee = (decimal)Math.Ceiling(duration) * parkingRate.HourlyRate;
 
             await _dbContext.SaveChangesAsync();
 
