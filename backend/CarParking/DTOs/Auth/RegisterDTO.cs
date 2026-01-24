@@ -7,18 +7,18 @@ namespace CarParking.DTOs.Auth
     {
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public required string Email { get; set; }
 
         [Required]
         [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
-        public string Password { get; set; }
+        public required string Password { get; set; }
 
         [Required]
-        public string FullName { get; set; }
+        public required string FullName { get; set; }
 
         [Required]
         [Phone]
-        public string PhoneNumber { get; set; }
+        public required string PhoneNumber { get; set; }
 
         [Required]
         public UserRole Role { get; set; }

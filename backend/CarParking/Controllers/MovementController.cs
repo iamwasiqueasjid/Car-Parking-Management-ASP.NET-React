@@ -68,56 +68,68 @@ namespace CarParking.Controllers
         [HttpPost("record-exit/{vrm}")]
         public async Task<IActionResult> RecordExit(string vrm)
         {
-            vrm = vrm.Replace(" ", "").ToLower();
-
-            var vehicle = await _dbContext.Vehicles
-                .FirstOrDefaultAsync(v => v.VRM == vrm && v.ExitTime == null);
-
-            if (vehicle == null)
+            try
             {
-                return NotFound(new
+                vrm = vrm.Replace(" ", "").ToLower();
+
+                var vehicle = await _dbContext.Vehicles
+                    .FirstOrDefaultAsync(v => v.VRM == vrm && v.ExitTime == null);
+
+                if (vehicle == null)
                 {
-                    success = false,
-                    message = "Vehicle not found or already exited."
-                });
-            }
-
-            vehicle.ExitTime = DateTime.UtcNow;
-
-            var parkingRate = await _dbContext.ParkingRates
-                .Where(r => r.IsActive)
-                .OrderByDescending(r => r.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (parkingRate == null)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = "No active parking rate found. Please contact administrator."
-                });
-            }
-
-            var duration = (vehicle.ExitTime.Value - vehicle.EntryTime).TotalHours;
-            vehicle.ParkingFee = (decimal)Math.Ceiling(duration) * parkingRate.HourlyRate;
-
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new
-            {
-                success = true,
-                message = "Vehicle exit recorded successfully",
-                vehicle = new
-                {
-                    vehicle.VehicleId,
-                    vehicle.VRM,
-                    vehicle.EntryTime,
-                    vehicle.ExitTime,
-                    Duration = vehicle.ExitTime.Value - vehicle.EntryTime,
-                    vehicle.ParkingFee,
-                    vehicle.IsPaid
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "Vehicle not found or already exited."
+                    });
                 }
-            });
+
+                vehicle.ExitTime = DateTime.UtcNow;
+
+                var parkingRate = await _dbContext.ParkingRates
+                    .Where(r => r.IsActive)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (parkingRate == null)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "No active parking rate found. Please contact administrator."
+                    });
+                }
+
+                var duration = (vehicle.ExitTime.Value - vehicle.EntryTime).TotalHours;
+                vehicle.ParkingFee = (decimal)Math.Ceiling(duration) * parkingRate.HourlyRate;
+
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Vehicle exit recorded successfully",
+                    vehicle = new
+                    {
+                        vehicle.VehicleId,
+                        vehicle.VRM,
+                        vehicle.EntryTime,
+                        vehicle.ExitTime,
+                        Duration = vehicle.ExitTime.Value - vehicle.EntryTime,
+                        vehicle.ParkingFee,
+                        vehicle.IsPaid
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error recording vehicle exit",
+                    error = ex.Message
+                });
+            }
         }
 
         [HttpGet("active-vehicles")]

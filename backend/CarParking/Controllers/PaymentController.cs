@@ -111,69 +111,93 @@ namespace CarParking.Controllers
         [Authorize(Policy = "OwnerOnly")]
         public async Task<IActionResult> GetPaymentSummary()
         {
-            var today = DateTime.UtcNow.Date;
-
-            var paidToday = await _dbContext.Payments
-                .Where(p => p.PaymentTime.Date == today)
-                .SumAsync(p => p.Amount);
-
-            var pendingPayments = await _dbContext.Vehicles
-                .Where(v => v.ExitTime != null && !v.IsPaid)
-                .SumAsync(v => v.ParkingFee ?? 0);
-
-            var totalPaid = await _dbContext.Payments
-                .Where(p => p.PaymentTime.Date == today)
-                .CountAsync();
-
-            var totalPending = await _dbContext.Vehicles
-                .Where(v => v.ExitTime != null && !v.IsPaid)
-                .CountAsync();
-
-            return Ok(new
+            try
             {
-                paidTransactions = new
+                var today = DateTime.UtcNow.Date;
+
+                var paidToday = await _dbContext.Payments
+                    .Where(p => p.PaymentTime.Date == today)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
+
+                var pendingPayments = await _dbContext.Vehicles
+                    .Where(v => v.ExitTime != null && !v.IsPaid)
+                    .SumAsync(v => v.ParkingFee ?? 0);
+
+                var totalPaid = await _dbContext.Payments
+                    .Where(p => p.PaymentTime.Date == today)
+                    .CountAsync();
+
+                var totalPending = await _dbContext.Vehicles
+                    .Where(v => v.ExitTime != null && !v.IsPaid)
+                    .CountAsync();
+
+                return Ok(new
                 {
-                    amount = paidToday,
-                    count = totalPaid,
-                    status = "Paid"
-                },
-                pendingTransactions = new
+                    paidTransactions = new
+                    {
+                        amount = paidToday,
+                        count = totalPaid,
+                        status = "Paid"
+                    },
+                    pendingTransactions = new
+                    {
+                        amount = pendingPayments,
+                        count = totalPending,
+                        status = "Pending"
+                    },
+                    totalRevenue = paidToday
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
                 {
-                    amount = pendingPayments,
-                    count = totalPending,
-                    status = "Pending"
-                },
-                totalRevenue = paidToday
-            });
+                    success = false,
+                    message = "Error retrieving payment summary",
+                    error = ex.Message
+                });
+            }
         }
 
         [HttpGet("weekly-revenue")]
         [Authorize(Policy = "OwnerOnly")]
         public async Task<IActionResult> GetWeeklyRevenue()
         {
-            var today = DateTime.UtcNow.Date;
-            var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+            try
+            {
+                var today = DateTime.UtcNow.Date;
+                var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
 
-            var weeklyData = await _dbContext.Payments
-                .Where(p => p.PaymentTime >= startOfWeek)
-                .GroupBy(p => p.PaymentTime.Date)
-                .Select(g => new
+                var weeklyData = await _dbContext.Payments
+                    .Where(p => p.PaymentTime >= startOfWeek)
+                    .GroupBy(p => p.PaymentTime.Date)
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        Revenue = g.Sum(p => p.Amount)
+                    })
+                    .ToListAsync();
+
+                var result = Enumerable.Range(0, 7)
+                    .Select(i => startOfWeek.AddDays(i))
+                    .Select(date => new
+                    {
+                        Day = date.DayOfWeek.ToString(),
+                        Revenue = weeklyData.FirstOrDefault(w => w.Date == date)?.Revenue ?? 0
+                    })
+                    .ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
                 {
-                    Date = g.Key,
-                    Revenue = g.Sum(p => p.Amount)
-                })
-                .ToListAsync();
-
-            var result = Enumerable.Range(0, 7)
-                .Select(i => startOfWeek.AddDays(i))
-                .Select(date => new
-                {
-                    Day = date.DayOfWeek.ToString(),
-                    Revenue = weeklyData.FirstOrDefault(w => w.Date == date)?.Revenue ?? 0
-                })
-                .ToList();
-
-            return Ok(result);
+                    success = false,
+                    message = "Error retrieving weekly revenue",
+                    error = ex.Message
+                });
+            }
         }
     }
 }

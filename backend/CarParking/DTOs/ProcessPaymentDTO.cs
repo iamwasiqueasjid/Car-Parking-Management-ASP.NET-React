@@ -8,6 +8,6 @@ namespace CarParking.DTOs
         public decimal Amount { get; set; }
 
         [Required]
-        public string PaymentMethod { get; set; }
+        public required string PaymentMethod { get; set; }
     }
 }

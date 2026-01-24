@@ -1,4 +1,5 @@
 ﻿using CarParking.Data;
+using CarParking.DTOs;
 using CarParking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -44,12 +45,18 @@ namespace CarParking.Controllers
         }
 
         [HttpPost("add-rate")]
-        [Authorize(Policy = "OwnerOnly")]
-        public async Task<IActionResult> AddRate(decimal HourlyRate)
+        [Authorize]
+        public async Task<IActionResult> AddRate([FromBody] AddParkingRateDTO dto)
         {
-            if (HourlyRate <= 0)
+            if (!ModelState.IsValid)
             {
-                return BadRequest(new { message = "Hourly rate must be greater than 0" });
+                return BadRequest(ModelState);
+            }
+
+            var userRole = User.FindFirst("Role")?.Value;
+            if (userRole != "Owner")
+            {
+                return Forbid();
             }
 
             // Use transaction to ensure consistency
@@ -69,7 +76,7 @@ namespace CarParking.Controllers
 
                 var parkingRate = new ParkingRate()
                 {
-                    HourlyRate = HourlyRate,
+                    HourlyRate = dto.HourlyRate,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true
                 };

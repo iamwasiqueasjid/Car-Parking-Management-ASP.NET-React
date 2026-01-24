@@ -10,7 +10,7 @@ namespace CarParking.Models
 
         [Column(TypeName = "varchar(20)")]
         [Required(ErrorMessage = "VRM is required")]
-        public string VRM { get; set; }
+        public required string VRM { get; set; }
 
         public DateTime EntryTime { get; set; }
 
@@ -27,6 +27,6 @@ namespace CarParking.Models
 
         public string? Zone { get; set; }
 
-        public ICollection<Payment> Payments { get; set; }
+        public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }
