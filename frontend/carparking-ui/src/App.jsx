@@ -1,10 +1,11 @@
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
+import EntryModal from "./components/EntryModal";
+import ExitModal from "./components/ExitModal";
+import ParkingRateModal from "./components/ParkingRateModal";
 
 function App() {
-  // state to track which panel is active
-
   const statContainers = [
     {
       title: "Active vehicles",
@@ -137,6 +138,10 @@ function App() {
   ];
 
   const [activePanel, setActivePanel] = useState("dashboard");
+  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isParkingRateModalOpen, setIsParkingRateModalOpen] = useState(false);
+
   const getHeaderTitle = () => {
     switch (activePanel) {
       case "dashboard":
@@ -344,8 +349,11 @@ function App() {
                     <div className="operation-card">
                       <h5>🚪 Entry Management</h5>
                       <p className="text-muted">Register new vehicle entries</p>
-                      <button className="btn btn-primary">
-                        Manage Entries
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => setIsEntryModalOpen(true)}
+                      >
+                        Record Entry
                       </button>
                     </div>
                   </div>
@@ -353,15 +361,23 @@ function App() {
                     <div className="operation-card">
                       <h5>🚦 Exit Processing</h5>
                       <p className="text-muted">Process vehicle exits</p>
-                      <button className="btn btn-primary">Manage Exits</button>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => setIsExitModalOpen(true)}
+                      >
+                        Process Exit
+                      </button>
                     </div>
                   </div>
                   <div className="col-md-4 mb-3">
                     <div className="operation-card">
-                      <h5>💳 Payment Processing</h5>
-                      <p className="text-muted">Handle payment transactions</p>
-                      <button className="btn btn-primary">
-                        Process Payments
+                      <h5>💰 Parking Rates</h5>
+                      <p className="text-muted">Add new parking rates</p>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => setIsParkingRateModalOpen(true)}
+                      >
+                        Add Parking Rate
                       </button>
                     </div>
                   </div>
@@ -369,6 +385,20 @@ function App() {
               </div>
             </div>
           )}
+
+          {/* Modals */}
+          <EntryModal
+            isOpen={isEntryModalOpen}
+            onClose={() => setIsEntryModalOpen(false)}
+          />
+          <ExitModal
+            isOpen={isExitModalOpen}
+            onClose={() => setIsExitModalOpen(false)}
+          />
+          <ParkingRateModal
+            isOpen={isParkingRateModalOpen}
+            onClose={() => setIsParkingRateModalOpen(false)}
+          />
         </div>
       </div>
     </div>
