@@ -227,9 +227,14 @@ function CustomerDashboard() {
                   <div className="col-md-9">
                     <div className="card shadow-sm rounded-3 p-3">
                       <h6 className="fw-bold mb-3">Weekly Spending</h6>
-                      <div className="row align-items-end" style={{ height: "250px" }}>
+                      <div
+                        className="row align-items-end"
+                        style={{ height: "250px" }}
+                      >
                         {weeklySpending.map((item, index) => {
-                          const maxAmount = Math.max(...weeklySpending.map((d) => d.amount));
+                          const maxAmount = Math.max(
+                            ...weeklySpending.map((d) => d.amount),
+                          );
                           const height = (item.amount / maxAmount) * 200;
                           return (
                             <div key={index} className="col text-center">
@@ -241,7 +246,9 @@ function CustomerDashboard() {
                                   backgroundColor: "#4a90e2",
                                 }}
                               ></div>
-                              <small className="text-muted d-block">{item.day.slice(0, 3)}</small>
+                              <small className="text-muted d-block">
+                                {item.day.slice(0, 3)}
+                              </small>
                               <small className="fw-bold">${item.amount}</small>
                             </div>
                           );
@@ -308,7 +315,9 @@ function CustomerDashboard() {
                           <tbody>
                             {recentSessions.map((session, index) => (
                               <tr key={index}>
-                                <td className="fw-bold">{session.vehiclePlate}</td>
+                                <td className="fw-bold">
+                                  {session.vehiclePlate}
+                                </td>
                                 <td>{session.entryTime}</td>
                                 <td>{session.exitTime}</td>
                                 <td>{session.duration}</td>
@@ -318,7 +327,10 @@ function CustomerDashboard() {
                                     className="badge rounded-pill"
                                     style={{
                                       backgroundColor: statusBg[session.status],
-                                      color: session.status === "Paid" ? "#0f5132" : "#664d03",
+                                      color:
+                                        session.status === "Paid"
+                                          ? "#0f5132"
+                                          : "#664d03",
                                     }}
                                   >
                                     {session.status}
@@ -351,7 +363,9 @@ function CustomerDashboard() {
                         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
                       </svg>
                       <div>
-                        <strong>You have {pendingPayments.length} pending payments</strong>
+                        <strong>
+                          You have {pendingPayments.length} pending payments
+                        </strong>
                         <br />
                         <small>Total amount due: $45.50</small>
                       </div>
@@ -385,7 +399,9 @@ function CustomerDashboard() {
                           <tbody>
                             {pendingPayments.map((payment, index) => (
                               <tr key={index}>
-                                <td className="fw-bold">{payment.vehiclePlate}</td>
+                                <td className="fw-bold">
+                                  {payment.vehiclePlate}
+                                </td>
                                 <td>{payment.entryTime}</td>
                                 <td>{payment.exitTime}</td>
                                 <td>{payment.duration}</td>
@@ -435,7 +451,9 @@ function CustomerDashboard() {
                           <tbody>
                             {recentSessions.map((session, index) => (
                               <tr key={index}>
-                                <td className="fw-bold">{session.vehiclePlate}</td>
+                                <td className="fw-bold">
+                                  {session.vehiclePlate}
+                                </td>
                                 <td>{session.entryTime}</td>
                                 <td>{session.exitTime}</td>
                                 <td>{session.duration}</td>
