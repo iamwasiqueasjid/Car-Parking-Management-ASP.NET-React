@@ -25,9 +25,9 @@
 
 /* Custom Input Styling */
 .custom-input {
-  background-color: #161b22;
-  border: 1.5px solid #30363d;
-  color: #c9d1d9;
+  background-color: #161b22 !important;
+  border: 1px solid #30363d;
+  color: #a8b3c1 !important;
   border-radius: 8px;
   transition: all 0.2s ease;
   font-size: 15px;
@@ -35,14 +35,15 @@
 }
 
 .custom-input::placeholder {
-  color: #8b949e;
+  color: #e6edf3 !important;
+  opacity: 0.6;
   font-size: 14px;
 }
 
 .custom-input:focus {
-  background-color: #0d1117;
+  background-color: #0d1117 !important;
   border-color: #58a6ff;
-  color: #c9d1d9;
+  color: #a8b3c1 !important;
   box-shadow: none;
 }
 
@@ -114,9 +115,9 @@
 }
 
 .role-btn.active {
-  background-color: #1f6feb;
-  border-color: #1f6feb;
-  color: #ffffff;
+  background: linear-gradient(135deg, #1f6feb 0%, #1a5fd8 100%) !important;
+  border-color: #1f6feb !important;
+  color: #ffffff !important;
 }
 
 .role-btn:focus {
@@ -168,7 +169,6 @@
   color: #79c0ff;
 }
 
-/* Auth Right Image */
 .auth-right img {
   object-fit: cover;
 }
