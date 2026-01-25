@@ -1,6 +1,5 @@
 import api from "./api";
 
-// In-memory user state (populated after login/register)
 let currentUser = null;
 
 export const authService = {
@@ -74,8 +73,7 @@ export const authService = {
     return !!user;
   },
 
-  // Get user role
   getUserRole: () => {
-    return currentUser?.role; // 0 = Customer, 1 = Owner
+    return currentUser?.role;
   },
 };

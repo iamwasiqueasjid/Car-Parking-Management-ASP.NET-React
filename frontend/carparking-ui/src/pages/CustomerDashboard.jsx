@@ -8,6 +8,100 @@ function CustomerDashboard() {
   const [user, setUser] = useState(null);
   const [activePanel, setActivePanel] = useState("dashboard");
 
+  // Dummy data - will be replaced with API calls
+  const statContainers = [
+    {
+      title: "Pending Payments",
+      score: "$45.50",
+      supportingLine: "2 unpaid sessions",
+    },
+    {
+      title: "This Week Spend",
+      score: "$127.25",
+      supportingLine: "8 parking sessions",
+    },
+    {
+      title: "Total Visits",
+      score: 42,
+      supportingLine: "This month",
+    },
+    {
+      title: "Active Parking",
+      score: 1,
+      supportingLine: "Currently parked",
+    },
+  ];
+
+  const pendingPayments = [
+    {
+      vehiclePlate: "AB21CDE",
+      entryTime: "Jan 24, 09:15 AM",
+      exitTime: "Jan 24, 12:30 PM",
+      duration: "3h 15m",
+      fee: "$9.75",
+      status: "Pending",
+    },
+    {
+      vehiclePlate: "XY70MNO",
+      entryTime: "Jan 23, 14:20 PM",
+      exitTime: "Jan 23, 18:45 PM",
+      duration: "4h 25m",
+      fee: "$13.25",
+      status: "Pending",
+    },
+    {
+      vehiclePlate: "AB21CDE",
+      entryTime: "Jan 22, 08:00 AM",
+      exitTime: "Jan 22, 10:15 AM",
+      duration: "2h 15m",
+      fee: "$6.75",
+      status: "Pending",
+    },
+  ];
+
+  const recentSessions = [
+    {
+      vehiclePlate: "AB21CDE",
+      entryTime: "Jan 20, 10:30 AM",
+      exitTime: "Jan 20, 14:45 PM",
+      duration: "4h 15m",
+      fee: "$12.75",
+      status: "Paid",
+    },
+    {
+      vehiclePlate: "XY70MNO",
+      entryTime: "Jan 19, 09:00 AM",
+      exitTime: "Jan 19, 11:30 AM",
+      duration: "2h 30m",
+      fee: "$7.50",
+      status: "Paid",
+    },
+    {
+      vehiclePlate: "AB21CDE",
+      entryTime: "Jan 18, 15:20 PM",
+      exitTime: "Jan 18, 17:35 PM",
+      duration: "2h 15m",
+      fee: "$6.75",
+      status: "Paid",
+    },
+  ];
+
+  const weeklySpending = [
+    { day: "Monday", amount: 15.5 },
+    { day: "Tuesday", amount: 22.75 },
+    { day: "Wednesday", amount: 18.25 },
+    { day: "Thursday", amount: 25.0 },
+    { day: "Friday", amount: 30.5 },
+    { day: "Saturday", amount: 8.75 },
+    { day: "Sunday", amount: 6.5 },
+  ];
+
+  const statusBg = {
+    Paid: "#d1e7dd",
+    Pending: "#fff3cd",
+    Failed: "#f8d7da",
+  };
+
   useEffect(() => {
     const loadUser = async () => {
       const currentUser = await authService.getCurrentUser();
@@ -16,7 +110,6 @@ function CustomerDashboard() {
         return;
       }
 
-      // Ensure only customers can access this page
       if (currentUser.role !== 0) {
         navigate("/dashboard");
         return;
@@ -31,6 +124,17 @@ function CustomerDashboard() {
   const handleLogout = async () => {
     await authService.logout();
     navigate("/login");
+  };
+
+  const getHeaderTitle = () => {
+    switch (activePanel) {
+      case "dashboard":
+        return "Overview";
+      case "payments":
+        return "Pending Payments";
+      default:
+        return "Dashboard";
+    }
   };
 
   if (!user) {
@@ -52,18 +156,6 @@ function CustomerDashboard() {
               onClick={() => setActivePanel("dashboard")}
             >
               <span>Dashboard</span>
-            </button>
-            <button
-              className={`sidebar-btn ${activePanel === "vehicles" ? "active" : ""}`}
-              onClick={() => setActivePanel("vehicles")}
-            >
-              <span>My Vehicles</span>
-            </button>
-            <button
-              className={`sidebar-btn ${activePanel === "history" ? "active" : ""}`}
-              onClick={() => setActivePanel("history")}
-            >
-              <span>Parking History</span>
             </button>
             <button
               className={`sidebar-btn ${activePanel === "payments" ? "active" : ""}`}
@@ -97,12 +189,7 @@ function CustomerDashboard() {
         <div className="col-md-10 right-panel">
           {/* Page Header */}
           <div className="page-header">
-            <h2 className="mb-0">
-              {activePanel === "dashboard" && "Dashboard"}
-              {activePanel === "vehicles" && "My Vehicles"}
-              {activePanel === "history" && "Parking History"}
-              {activePanel === "payments" && "Payments"}
-            </h2>
+            <h2 className="mb-0">{getHeaderTitle()}</h2>
             <div className="header-actions">
               <span className="text-muted">
                 {new Date().toLocaleDateString("en-US", {
@@ -120,218 +207,127 @@ function CustomerDashboard() {
             {activePanel === "dashboard" && (
               <>
                 {/* Stats Cards */}
-                <div className="row g-4 mb-5">
-                  <div className="col-md-6 col-lg-3">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <div className="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                          <p className="text-muted mb-1">Active Parking</p>
-                          <h3 className="fw-bold mb-0">0</h3>
-                        </div>
-                        <div
-                          className="p-3 rounded"
-                          style={{ backgroundColor: "#2563eb" }}
-                        >
-                          <svg
-                            width="24"
-                            height="24"
-                            fill="white"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <p className="text-muted small mb-0">
-                        No active sessions
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 col-lg-3">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <div className="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                          <p className="text-muted mb-1">Total Spent</p>
-                          <h3 className="fw-bold mb-0">$0.00</h3>
-                        </div>
-                        <div
-                          className="p-3 rounded"
-                          style={{ backgroundColor: "#10b981" }}
-                        >
-                          <svg
-                            width="24"
-                            height="24"
-                            fill="white"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <p className="text-muted small mb-0">This month</p>
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 col-lg-3">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <div className="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                          <p className="text-muted mb-1">Total Visits</p>
-                          <h3 className="fw-bold mb-0">0</h3>
-                        </div>
-                        <div
-                          className="p-3 rounded"
-                          style={{ backgroundColor: "#f59e0b" }}
-                        >
-                          <svg
-                            width="24"
-                            height="24"
-                            fill="white"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <p className="text-muted small mb-0">All time</p>
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 col-lg-3">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <div className="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                          <p className="text-muted mb-1">Registered Vehicles</p>
-                          <h3 className="fw-bold mb-0">0</h3>
-                        </div>
-                        <div
-                          className="p-3 rounded"
-                          style={{ backgroundColor: "#8b5cf6" }}
-                        >
-                          <svg
-                            width="24"
-                            height="24"
-                            fill="white"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <p className="text-muted small mb-0">
-                        Add vehicle to start
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="row g-4 mb-4">
-                  <div className="col-12">
-                    <h5 className="fw-bold mb-3">Quick Actions</h5>
-                  </div>
-                  <div className="col-md-6 col-lg-3">
-                    <button
-                      className="btn btn-lg w-100 p-4 border-0"
-                      style={{ backgroundColor: "#2563eb", color: "white" }}
-                    >
-                      <div>
-                        <svg
-                          width="48"
-                          height="48"
-                          fill="white"
-                          viewBox="0 0 24 24"
-                          className="mb-2"
-                        >
-                          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                        </svg>
-                        <h6 className="fw-bold mb-1">Add Vehicle</h6>
-                        <small>Register new vehicle</small>
-                      </div>
-                    </button>
-                  </div>
-                  <div className="col-md-6 col-lg-3">
-                    <button
-                      className="btn btn-lg w-100 p-4 border-0"
-                      style={{ backgroundColor: "#10b981", color: "white" }}
-                    >
-                      <div>
-                        <svg
-                          width="48"
-                          height="48"
-                          fill="white"
-                          viewBox="0 0 24 24"
-                          className="mb-2"
-                        >
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-                        </svg>
-                        <h6 className="fw-bold mb-1">View History</h6>
-                        <small>Parking history</small>
-                      </div>
-                    </button>
-                  </div>
-                  <div className="col-md-6 col-lg-3">
-                    <button
-                      className="btn btn-lg w-100 p-4 border-0"
-                      style={{ backgroundColor: "#f59e0b", color: "white" }}
-                    >
-                      <div>
-                        <svg
-                          width="48"
-                          height="48"
-                          fill="white"
-                          viewBox="0 0 24 24"
-                          className="mb-2"
-                        >
-                          <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
-                        </svg>
-                        <h6 className="fw-bold mb-1">Payments</h6>
-                        <small>View payments</small>
-                      </div>
-                    </button>
-                  </div>
-                  <div className="col-md-6 col-lg-3">
-                    <button
-                      className="btn btn-lg w-100 p-4 border-0"
-                      style={{ backgroundColor: "#8b5cf6", color: "white" }}
-                    >
-                      <div>
-                        <svg
-                          width="48"
-                          height="48"
-                          fill="white"
-                          viewBox="0 0 24 24"
-                          className="mb-2"
-                        >
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg>
-                        <h6 className="fw-bold mb-1">Profile</h6>
-                        <small>Manage account</small>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
                 <div className="row">
+                  {statContainers.map((item, index) => (
+                    <div key={index} className="col-md-3 mb-4">
+                      <div
+                        className="card shadow-sm rounded-3 p-3"
+                        id="statContainer"
+                      >
+                        <h5 className="card-title">{item.title}</h5>
+                        <h2 className="card-text">{item.score}</h2>
+                        <p className="text-muted">{item.supportingLine}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Weekly Spending Chart */}
+                <div className="row">
+                  <div className="col-md-9">
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <h6 className="fw-bold mb-3">Weekly Spending</h6>
+                      <div className="row align-items-end" style={{ height: "250px" }}>
+                        {weeklySpending.map((item, index) => {
+                          const maxAmount = Math.max(...weeklySpending.map((d) => d.amount));
+                          const height = (item.amount / maxAmount) * 200;
+                          return (
+                            <div key={index} className="col text-center">
+                              <div
+                                className="mb-2 mx-auto rounded-top"
+                                style={{
+                                  height: `${height}px`,
+                                  width: "40px",
+                                  backgroundColor: "#4a90e2",
+                                }}
+                              ></div>
+                              <small className="text-muted d-block">{item.day.slice(0, 3)}</small>
+                              <small className="fw-bold">${item.amount}</small>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Summary */}
+                  <div className="col-md-3">
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <h6 className="fw-bold mb-3">Payment Status</h6>
+                      <div className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="text-muted">Paid</span>
+                          <span className="fw-bold text-success">$81.75</span>
+                        </div>
+                        <div className="progress" style={{ height: "6px" }}>
+                          <div
+                            className="progress-bar bg-success"
+                            style={{ width: "65%" }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="text-muted">Pending</span>
+                          <span className="fw-bold text-warning">$45.50</span>
+                        </div>
+                        <div className="progress" style={{ height: "6px" }}>
+                          <div
+                            className="progress-bar bg-warning"
+                            style={{ width: "35%" }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-top">
+                        <div className="d-flex justify-content-between">
+                          <span className="fw-bold">Total</span>
+                          <span className="fw-bold">$127.25</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Parking Sessions */}
+                <div className="row mt-4">
                   <div className="col-12">
-                    <div className="card shadow-sm rounded-3 p-4">
-                      <h5 className="fw-bold mb-4">Recent Parking Sessions</h5>
-                      <div className="text-center py-5">
-                        <svg
-                          width="64"
-                          height="64"
-                          fill="#6b7280"
-                          viewBox="0 0 24 24"
-                          className="mb-3"
-                        >
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                        </svg>
-                        <p className="text-muted">No parking sessions yet</p>
-                        <p className="text-muted small">
-                          Start by adding a vehicle and parking your car
-                        </p>
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <h6 className="fw-bold mb-3">Recent Parking Sessions</h6>
+                      <div className="table-responsive">
+                        <table className="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>Vehicle</th>
+                              <th>Entry Time</th>
+                              <th>Exit Time</th>
+                              <th>Duration</th>
+                              <th>Fee</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recentSessions.map((session, index) => (
+                              <tr key={index}>
+                                <td className="fw-bold">{session.vehiclePlate}</td>
+                                <td>{session.entryTime}</td>
+                                <td>{session.exitTime}</td>
+                                <td>{session.duration}</td>
+                                <td className="fw-bold">{session.fee}</td>
+                                <td>
+                                  <span
+                                    className="badge rounded-pill"
+                                    style={{
+                                      backgroundColor: statusBg[session.status],
+                                      color: session.status === "Paid" ? "#0f5132" : "#664d03",
+                                    }}
+                                  >
+                                    {session.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
@@ -339,25 +335,131 @@ function CustomerDashboard() {
               </>
             )}
 
-            {activePanel === "vehicles" && (
-              <div className="text-center py-5">
-                <h4>My Vehicles</h4>
-                <p className="text-muted">Vehicle management coming soon</p>
-              </div>
-            )}
-
-            {activePanel === "history" && (
-              <div className="text-center py-5">
-                <h4>Parking History</h4>
-                <p className="text-muted">History view coming soon</p>
-              </div>
-            )}
-
             {activePanel === "payments" && (
-              <div className="text-center py-5">
-                <h4>Payment Records</h4>
-                <p className="text-muted">Payment history coming soon</p>
-              </div>
+              <>
+                {/* Pending Payments Header */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <div className="alert alert-warning d-flex align-items-center">
+                      <svg
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                        className="me-2"
+                      >
+                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                      </svg>
+                      <div>
+                        <strong>You have {pendingPayments.length} pending payments</strong>
+                        <br />
+                        <small>Total amount due: $45.50</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pending Payments List */}
+                <div className="row">
+                  <div className="col-12">
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h6 className="fw-bold mb-0">Pending Payments</h6>
+                        <button className="btn btn-primary btn-sm">
+                          Pay All ($45.50)
+                        </button>
+                      </div>
+                      <div className="table-responsive">
+                        <table className="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>Vehicle</th>
+                              <th>Entry Time</th>
+                              <th>Exit Time</th>
+                              <th>Duration</th>
+                              <th>Fee</th>
+                              <th>Status</th>
+                              <th>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pendingPayments.map((payment, index) => (
+                              <tr key={index}>
+                                <td className="fw-bold">{payment.vehiclePlate}</td>
+                                <td>{payment.entryTime}</td>
+                                <td>{payment.exitTime}</td>
+                                <td>{payment.duration}</td>
+                                <td className="fw-bold">{payment.fee}</td>
+                                <td>
+                                  <span
+                                    className="badge rounded-pill"
+                                    style={{
+                                      backgroundColor: statusBg[payment.status],
+                                      color: "#664d03",
+                                    }}
+                                  >
+                                    {payment.status}
+                                  </span>
+                                </td>
+                                <td>
+                                  <button className="btn btn-sm btn-success">
+                                    Pay Now
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment History */}
+                <div className="row mt-4">
+                  <div className="col-12">
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <h6 className="fw-bold mb-3">Payment History</h6>
+                      <div className="table-responsive">
+                        <table className="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>Vehicle</th>
+                              <th>Entry Time</th>
+                              <th>Exit Time</th>
+                              <th>Duration</th>
+                              <th>Fee</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recentSessions.map((session, index) => (
+                              <tr key={index}>
+                                <td className="fw-bold">{session.vehiclePlate}</td>
+                                <td>{session.entryTime}</td>
+                                <td>{session.exitTime}</td>
+                                <td>{session.duration}</td>
+                                <td className="fw-bold">{session.fee}</td>
+                                <td>
+                                  <span
+                                    className="badge rounded-pill"
+                                    style={{
+                                      backgroundColor: statusBg[session.status],
+                                      color: "#0f5132",
+                                    }}
+                                  >
+                                    {session.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
