@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authService } from "../services/authService";
 import "./Auth.css";
 
 function Register() {
@@ -12,6 +13,8 @@ function Register() {
     role: "Owner", // Default to Owner
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,6 +22,7 @@ function Register() {
       ...prev,
       [name]: value,
     }));
+    setError(""); // Clear error on input change
   };
 
   const handleRoleSelect = (role) => {
@@ -28,13 +32,31 @@ function Register() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Register Data:", formData);
-    // TODO: Add API call here
-    // For now, just navigate to dashboard based on role
-    alert(`Account created for ${formData.email}`);
-    navigate("/dashboard");
+    setLoading(true);
+    setError("");
+    
+    try {
+      const response = await authService.register({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber,
+        role: formData.role,
+      });
+      
+      // Navigate based on user role (0 = Customer, 1 = Owner)
+      if (response.user.role === 1) {
+        navigate("/dashboard"); // Owner dashboard
+      } else {
+        navigate("/customer-dashboard"); // Customer dashboard
+      }
+    } catch (err) {
+      setError(typeof err === 'string' ? err : 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,6 +76,13 @@ function Register() {
             </div>
 
             <form onSubmit={handleSubmit}>
+              {/* Error Message */}
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+
               {/* Email Field */}
               <div className="mb-4">
                 <label className="form-label text-light fw-medium">
@@ -208,8 +237,9 @@ function Register() {
               <button
                 type="submit"
                 className="btn btn-lg w-100 mb-4 gradient-btn"
+                disabled={loading}
               >
-                Create Account
+                {loading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
 

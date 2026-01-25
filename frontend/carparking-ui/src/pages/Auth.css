@@ -26,18 +26,18 @@
 /* Custom Input Styling */
 .custom-input {
   background-color: #161b22 !important;
-  border: 1px solid #30363d;
+  border: 1.5px solid #30363d !important;
   color: #a8b3c1 !important;
   border-radius: 8px;
   transition: all 0.2s ease;
-  font-size: 15px;
+  font-size: 15px !important;
   padding: 10px 16px;
 }
 
 .custom-input::placeholder {
   color: #e6edf3 !important;
   opacity: 0.6;
-  font-size: 14px;
+  font-size: 14px !important;
 }
 
 .custom-input:focus {
@@ -79,9 +79,9 @@
 .gradient-btn {
   background: linear-gradient(135deg, #1f6feb 0%, #1a5fd8 100%);
   border: none;
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 15px !important;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
@@ -102,8 +102,8 @@
   background-color: #161b22;
   border: 1.5px solid #30363d;
   color: #c9d1d9;
-  font-weight: 500;
-  font-size: 15px;
+  font-weight: 500 !important;
+  font-size: 15px !important;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
