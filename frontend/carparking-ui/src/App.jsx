@@ -184,13 +184,10 @@ function App() {
               <span>Operations</span>
             </button>
           </nav>
-          
+
           {/* Logout Button at Bottom */}
           <div style={{ marginTop: "auto", padding: "1rem" }}>
-            <button
-              className="sidebar-btn"
-              onClick={handleLogout}
-            >
+            <button className="sidebar-btn" onClick={handleLogout}>
               <svg
                 width="20"
                 height="20"

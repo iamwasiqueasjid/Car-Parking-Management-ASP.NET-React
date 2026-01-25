@@ -20,28 +20,27 @@ function Login() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    setError(""); // Clear error on input change
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
+
     try {
       const response = await authService.login({
         email: formData.email,
         password: formData.password,
       });
-      
-      // Navigate based on user role (0 = Customer, 1 = Owner)
+
       if (response.user.role === 1) {
-        navigate("/dashboard"); // Owner dashboard
+        navigate("/dashboard");
       } else {
-        navigate("/customer-dashboard"); // Customer dashboard
+        navigate("/customer-dashboard");
       }
     } catch (err) {
-      setError(typeof err === 'string' ? err : 'Invalid email or password');
+      setError(typeof err === "string" ? err : "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -100,19 +99,13 @@ function Login() {
                   Password
                 </label>
                 <div className="input-with-icon position-relative">
-                  <svg
+                  <img
+                    src="/SVG/Shared/password.svg"
+                    alt="Email"
                     width="20"
                     height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
                     className="input-icon"
-                  >
-                    <path
-                      d="M15 7H14V5C14 2.79 12.21 1 10 1C7.79 1 6 2.79 6 5V7H5C3.9 7 3 7.9 3 9V17C3 18.1 3.9 19 5 19H15C16.1 19 17 18.1 17 17V9C17 7.9 16.1 7 15 7ZM10 14C8.9 14 8 13.1 8 12C8 10.9 8.9 10 10 10C11.1 10 12 10.9 12 12C12 13.1 11.1 14 10 14ZM11.1 7H8.9V5C8.9 3.84 9.84 2.9 11 2.9C12.16 2.9 13.1 3.84 13.1 5V7H11.1Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  />
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
