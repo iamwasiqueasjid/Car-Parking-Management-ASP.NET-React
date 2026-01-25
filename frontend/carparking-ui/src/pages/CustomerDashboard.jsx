@@ -9,23 +9,27 @@ function CustomerDashboard() {
   const [activePanel, setActivePanel] = useState("dashboard");
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser) {
-      navigate("/login");
-      return;
-    }
+    const loadUser = async () => {
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        navigate("/login");
+        return;
+      }
 
-    // Ensure only customers can access this page
-    if (currentUser.role !== 0) {
-      navigate("/dashboard");
-      return;
-    }
+      // Ensure only customers can access this page
+      if (currentUser.role !== 0) {
+        navigate("/dashboard");
+        return;
+      }
 
-    setUser(currentUser);
+      setUser(currentUser);
+    };
+
+    loadUser();
   }, [navigate]);
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    await authService.logout();
     navigate("/login");
   };
 

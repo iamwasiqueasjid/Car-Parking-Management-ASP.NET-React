@@ -34,7 +34,8 @@ function Login() {
         password: formData.password,
       });
 
-      if (response.user.role === 1) {
+      // Response now contains user data directly (no token in response)
+      if (response.role === 1) {
         navigate("/dashboard");
       } else {
         navigate("/customer-dashboard");

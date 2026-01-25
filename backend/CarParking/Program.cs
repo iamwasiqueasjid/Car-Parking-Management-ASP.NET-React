@@ -48,6 +48,20 @@ builder.Services.AddAuthentication(options =>
 
         ClockSkew = TimeSpan.Zero
     };
+
+    // Read JWT token from cookie instead of Authorization header
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            // Try to get token from cookie first
+            if (context.Request.Cookies.ContainsKey("authToken"))
+            {
+                context.Token = context.Request.Cookies["authToken"];
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // =======================
@@ -119,7 +133,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials(); // Allow cookies
     });
 });
 

@@ -47,7 +47,8 @@ function Register() {
       });
 
       // Navigate based on user role (0 = Customer, 1 = Owner)
-      if (response.user.role === 1) {
+      // Response now contains user data directly (no nested user object)
+      if (response.role === 1) {
         navigate("/dashboard"); // Owner dashboard
       } else {
         navigate("/customer-dashboard"); // Customer dashboard

@@ -10,8 +10,8 @@ import ParkingRateModal from "./components/ParkingRateModal";
 function App() {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    await authService.logout();
     navigate("/login");
   };
 

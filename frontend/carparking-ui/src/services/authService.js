@@ -1,10 +1,12 @@
 import api from "./api";
 
+// In-memory user state (populated after login/register)
+let currentUser = null;
+
 export const authService = {
   // Register new user
   register: async (userData) => {
     try {
-      // Map frontend role to backend enum (0 = Customer, 1 = Owner)
       const roleValue = userData.role === "Owner" ? 1 : 0;
 
       const response = await api.post("/Auth/register", {
@@ -15,12 +17,8 @@ export const authService = {
         role: roleValue,
       });
 
-      // Save token and user data
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      }
-
+      // Store user data in memory (token is in HttpOnly cookie)
+      currentUser = response.data;
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || "Registration failed";
@@ -35,12 +33,8 @@ export const authService = {
         password: credentials.password,
       });
 
-      // Save token and user data
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      }
-
+      // Store user data in memory (token is in HttpOnly cookie)
+      currentUser = response.data;
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || "Login failed";
@@ -48,25 +42,40 @@ export const authService = {
   },
 
   // Logout user
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  logout: async () => {
+    try {
+      await api.post("/Auth/logout");
+      currentUser = null;
+    } catch (error) {
+      // Even if logout fails, clear user data
+      currentUser = null;
+    }
   },
 
-  // Get current user from localStorage
-  getCurrentUser: () => {
-    const userStr = localStorage.getItem("user");
-    return userStr ? JSON.parse(userStr) : null;
+  // Get current user from API
+  getCurrentUser: async () => {
+    if (currentUser) {
+      return currentUser;
+    }
+
+    try {
+      const response = await api.get("/Auth/me");
+      currentUser = response.data;
+      return currentUser;
+    } catch (error) {
+      currentUser = null;
+      return null;
+    }
   },
 
   // Check if user is authenticated
-  isAuthenticated: () => {
-    return !!localStorage.getItem("token");
+  isAuthenticated: async () => {
+    const user = await authService.getCurrentUser();
+    return !!user;
   },
 
   // Get user role
   getUserRole: () => {
-    const user = authService.getCurrentUser();
-    return user?.role; // 0 = Customer, 1 = Owner
+    return currentUser?.role; // 0 = Customer, 1 = Owner
   },
 };

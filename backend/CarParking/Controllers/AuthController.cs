@@ -56,17 +56,22 @@ namespace CarParking.Controllers
             // Generate token
             var token = _authService.GenerateToken(user);
 
-            var response = new AuthResponseDto
+            // Set HttpOnly cookie
+            Response.Cookies.Append("authToken", token, new CookieOptions
             {
-                Token = token,
-                User = new UserDto
-                {
-                    UserId = user.UserId,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    PhoneNumber = user.PhoneNumber,
-                    Role = user.Role
-                }
+                HttpOnly = true,
+                Secure = true, // Only send over HTTPS in production
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(24)
+            });
+
+            var response = new UserDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                Role = user.Role
             };
 
             return Ok(response);
@@ -102,17 +107,22 @@ namespace CarParking.Controllers
             // Generate token
             var token = _authService.GenerateToken(user);
 
-            var response = new AuthResponseDto
+            // Set HttpOnly cookie
+            Response.Cookies.Append("authToken", token, new CookieOptions
             {
-                Token = token,
-                User = new UserDto
-                {
-                    UserId = user.UserId,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    PhoneNumber = user.PhoneNumber,
-                    Role = user.Role
-                }
+                HttpOnly = true,
+                Secure = true, // Only send over HTTPS in production
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(24)
+            });
+
+            var response = new UserDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                Role = user.Role
             };
 
             return Ok(response);
@@ -149,10 +159,10 @@ namespace CarParking.Controllers
         }
 
         [HttpPost("logout")]
-        [Authorize]
         public IActionResult Logout()
         {
-            // With JWT, logout is handled on client side by removing the token
+            // Clear the HttpOnly cookie
+            Response.Cookies.Delete("authToken");
             return Ok(new { message = "Logged out successfully" });
         }
 
