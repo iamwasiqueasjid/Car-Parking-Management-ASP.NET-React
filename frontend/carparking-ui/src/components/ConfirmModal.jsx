@@ -25,6 +25,8 @@ function ConfirmModal({
 
   if (!isOpen) return null;
 
+  console.log("ConfirmModal rendering:", { isOpen, title, message, type });
+
   const getIconColor = () => {
     switch (type) {
       case "danger":
@@ -85,8 +87,10 @@ function ConfirmModal({
             )}
             <button
               className={`btn btn-${type === "danger" ? "danger" : type === "success" ? "success" : "primary"}`}
-              onClick={() => {
-                onConfirm();
+              onClick={async () => {
+                console.log("Confirm button clicked, executing onConfirm...");
+                await onConfirm();
+                console.log("onConfirm completed, closing modal...");
                 onClose();
               }}
             >

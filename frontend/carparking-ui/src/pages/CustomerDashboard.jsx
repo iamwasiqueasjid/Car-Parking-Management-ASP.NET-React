@@ -57,6 +57,37 @@ function CustomerDashboard() {
     });
   };
 
+  const loadRegisteredVRMs = async () => {
+    try {
+      const vrms = await customerService.getRegisteredVRMs();
+      setRegisteredVRMs(vrms);
+    } catch (error) {
+      console.error("Failed to load VRMs:", error);
+    }
+  };
+
+  const loadCustomerData = async () => {
+    try {
+      setLoading(true);
+      const [stats, history, parking, credit] = await Promise.all([
+        customerService.getCustomerStats(),
+        customerService.getParkingHistory(),
+        customerService.getCurrentParking(),
+        customerService.getCreditBalance(),
+      ]);
+      console.log("Parking history data:", history);
+      console.log("Sample payment record:", history[0]);
+      setCustomerStats(stats);
+      setParkingHistory(history);
+      setCurrentParking(parking);
+      setCreditBalance(credit.creditBalance);
+    } catch (error) {
+      console.error("Failed to load customer data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadUser = async () => {
       const currentUser = await authService.getCurrentUser();
@@ -71,25 +102,12 @@ function CustomerDashboard() {
       }
 
       setUser(currentUser);
-      loadRegisteredVRMs();
-      loadCustomerData();
+      await loadRegisteredVRMs();
+      await loadCustomerData();
     };
 
     loadUser();
-
-    // Refresh data every 5 seconds for real-time updates
-    const interval = setInterval(loadCustomerData, 5000);
-    return () => clearInterval(interval);
   }, [navigate]);
-
-  const loadRegisteredVRMs = async () => {
-    try {
-      const vrms = await customerService.getRegisteredVRMs();
-      setRegisteredVRMs(vrms);
-    } catch (error) {
-      console.error("Failed to load VRMs:", error);
-    }
-  };
 
   const handleAddVRM = async (e) => {
     e.preventDefault();
@@ -144,26 +162,6 @@ function CustomerDashboard() {
     Failed: "#f8d7da",
   };
 
-  const loadCustomerData = async () => {
-    try {
-      setLoading(true);
-      const [stats, history, parking, credit] = await Promise.all([
-        customerService.getCustomerStats(),
-        customerService.getParkingHistory(),
-        customerService.getCurrentParking(),
-        customerService.getCreditBalance(),
-      ]);
-      setCustomerStats(stats);
-      setParkingHistory(history);
-      setCurrentParking(parking);
-      setCreditBalance(credit.creditBalance);
-    } catch (error) {
-      console.error("Failed to load customer data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const formatDuration = (duration) => {
     if (!duration) return "N/A";
     const hours = Math.floor(duration.hours || 0);
@@ -211,13 +209,19 @@ function CustomerDashboard() {
 
   const pendingPayments = parkingHistory.filter((h) => !h.isPaid) || [];
   const paidSessions = parkingHistory.filter((h) => h.isPaid) || [];
+  
+  console.log("Pending payments count:", pendingPayments.length);
+  console.log("Pending payments:", pendingPayments);
 
   const handlePayParkingFee = async (vehicleId, amount) => {
+    console.log("Payment initiated for vehicleId:", vehicleId, "amount:", amount);
+    console.log("Current credit balance:", creditBalance);
+    
     if (creditBalance < amount) {
       showAlert(
         "Insufficient Credits",
         `You need $${amount.toFixed(2)} but only have $${creditBalance.toFixed(2)}. Please add credits first.`,
-        "warning"
+        "warning",
       );
       return;
     }
@@ -226,15 +230,21 @@ function CustomerDashboard() {
       "Confirm Payment",
       `Pay $${amount.toFixed(2)} using your account credits?`,
       async () => {
+        console.log("Payment confirmed, processing...");
+        // Close the confirm modal first
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        
         try {
           const response = await customerService.payParkingFee(vehicleId);
+          console.log("Payment response:", response);
           showAlert("Success", response.message, "success");
-          loadCustomerData(); // Refresh data
+          await loadCustomerData(); // Refresh data
         } catch (error) {
+          console.error("Payment error in handler:", error);
           showAlert("Payment Failed", error, "danger");
         }
       },
-      "info"
+      "info",
     );
   };
 
@@ -328,7 +338,7 @@ function CustomerDashboard() {
                     viewBox="0 0 16 16"
                     className="me-2"
                   >
-                    <path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718H4zm3.391-3.836c-1.043-.263-1.6-.825-1.6-1.616 0-.944.704-1.641 1.8-1.828v3.495l-.2-.05zm1.591 1.872c1.287.323 1.852.859 1.852 1.769 0 1.097-.826 1.828-2.2 1.939V8.73l.348.086z"/>
+                    <path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718H4zm3.391-3.836c-1.043-.263-1.6-.825-1.6-1.616 0-.944.704-1.641 1.8-1.828v3.495l-.2-.05zm1.591 1.872c1.287.323 1.852.859 1.852 1.769 0 1.097-.826 1.828-2.2 1.939V8.73l.348.086z" />
                   </svg>
                   Credit: ${creditBalance.toFixed(2)}
                 </span>
@@ -730,9 +740,17 @@ function CustomerDashboard() {
                                     </span>
                                   </td>
                                   <td>
-                                    <button 
+                                    <button
+                                      type="button"
                                       className="btn btn-sm btn-success"
-                                      onClick={() => handlePayParkingFee(payment.vehicleId, payment.parkingFee)}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handlePayParkingFee(
+                                          payment.vehicleId,
+                                          payment.parkingFee,
+                                        );
+                                      }}
                                     >
                                       Pay Now
                                     </button>
@@ -807,7 +825,10 @@ function CustomerDashboard() {
                 {/* Credit Balance Card */}
                 <div className="row mb-4">
                   <div className="col-md-6">
-                    <div className="card shadow-sm rounded-3 p-4 text-center" style={{ backgroundColor: "#f8f9fa" }}>
+                    <div
+                      className="card shadow-sm rounded-3 p-4 text-center"
+                      style={{ backgroundColor: "#f8f9fa" }}
+                    >
                       <h6 className="text-muted mb-2">Current Balance</h6>
                       <h1 className="display-4 fw-bold text-success mb-3">
                         ${creditBalance.toFixed(2)}
@@ -845,7 +866,9 @@ function CustomerDashboard() {
                 <div className="row">
                   <div className="col-12">
                     <div className="card shadow-sm rounded-3 p-3">
-                      <h6 className="fw-bold mb-3">Recent Payments with Credits</h6>
+                      <h6 className="fw-bold mb-3">
+                        Recent Payments with Credits
+                      </h6>
                       {paidSessions.length === 0 ? (
                         <div className="alert alert-info">
                           No credit payments yet
@@ -863,23 +886,23 @@ function CustomerDashboard() {
                               </tr>
                             </thead>
                             <tbody>
-                              {paidSessions.slice(0, 10).map((session, index) => (
-                                <tr key={index}>
-                                  <td>{formatDateTime(session.exitTime)}</td>
-                                  <td className="fw-bold">{session.vrm}</td>
-                                  <td>{formatDuration(session.duration)}</td>
-                                  <td className="fw-bold text-success">
-                                    -${session.parkingFee?.toFixed(2)}
-                                  </td>
-                                  <td>
-                                    <span
-                                      className="badge rounded-pill bg-success"
-                                    >
-                                      Paid
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
+                              {paidSessions
+                                .slice(0, 10)
+                                .map((session, index) => (
+                                  <tr key={index}>
+                                    <td>{formatDateTime(session.exitTime)}</td>
+                                    <td className="fw-bold">{session.vrm}</td>
+                                    <td>{formatDuration(session.duration)}</td>
+                                    <td className="fw-bold text-success">
+                                      -${session.parkingFee?.toFixed(2)}
+                                    </td>
+                                    <td>
+                                      <span className="badge rounded-pill bg-success">
+                                        Paid
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
                             </tbody>
                           </table>
                         </div>

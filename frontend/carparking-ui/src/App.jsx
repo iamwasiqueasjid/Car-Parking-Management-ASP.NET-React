@@ -51,9 +51,6 @@ function App() {
   // Fetch data on component mount
   useEffect(() => {
     fetchDashboardData();
-    // Refresh data every 5 seconds for real-time updates
-    const interval = setInterval(fetchDashboardData, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   // Format duration

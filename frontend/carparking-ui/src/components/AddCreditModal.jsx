@@ -34,7 +34,8 @@ function AddCreditModal({ isOpen, onClose, onSuccess }) {
         formData.cardNumber,
       );
       setSuccessMessage(
-        response.message || `Successfully added $${formData.amount} to your account!`,
+        response.message ||
+          `Successfully added $${formData.amount} to your account!`,
       );
       if (onSuccess) onSuccess();
     } catch (err) {

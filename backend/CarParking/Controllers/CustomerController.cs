@@ -379,29 +379,41 @@ namespace CarParking.Controllers
                 });
             }
 
-            // Deduct from credit balance
-            user.CreditBalance -= vehicle.ParkingFee.Value;
-            vehicle.IsPaid = true;
-
-            // Create payment record
-            var payment = new Models.Payment
+            try
             {
-                VehicleId = vehicle.VehicleId,
-                Amount = vehicle.ParkingFee.Value,
-                PaymentTime = DateTime.UtcNow,
-                PaymentMethod = "credit"
-            };
+                // Deduct from credit balance
+                user.CreditBalance -= vehicle.ParkingFee.Value;
+                vehicle.IsPaid = true;
 
-            _dbContext.Payments.Add(payment);
-            await _dbContext.SaveChangesAsync();
+                // Create payment record
+                var payment = new Models.Payment
+                {
+                    VehicleId = vehicle.VehicleId,
+                    Amount = vehicle.ParkingFee.Value,
+                    PaymentTime = DateTime.UtcNow,
+                    PaymentMethod = "Credit"
+                };
 
-            return Ok(new
+                _dbContext.Payments.Add(payment);
+                
+                // Explicitly mark entities as modified
+                _dbContext.Entry(user).State = EntityState.Modified;
+                _dbContext.Entry(vehicle).State = EntityState.Modified;
+                
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Payment successful",
+                    amountPaid = vehicle.ParkingFee,
+                    remainingBalance = user.CreditBalance
+                });
+            }
+            catch (Exception ex)
             {
-                success = true,
-                message = "Payment successful",
-                amountPaid = vehicle.ParkingFee,
-                remainingBalance = user.CreditBalance
-            });
+                return StatusCode(500, new { message = "Payment processing failed", error = ex.Message });
+            }
         }
     }
 
