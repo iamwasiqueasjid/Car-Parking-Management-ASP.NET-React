@@ -31,6 +31,9 @@ namespace CarParking.Models
         // Registered VRMs for this customer (comma-separated or collection)
         public string? RegisteredVRMs { get; set; }
 
+        // Account Credit Balance
+        public decimal CreditBalance { get; set; } = 0;
+
         public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
     }
 

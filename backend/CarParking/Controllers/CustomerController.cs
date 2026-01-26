@@ -1,4 +1,5 @@
 ﻿using CarParking.Data;
+using CarParking.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -271,6 +272,135 @@ namespace CarParking.Controllers
                 success = true,
                 message = "VRM removed successfully",
                 vrms = vrms.Select(v => v.ToUpper()).ToList()
+            });
+        }
+
+        // Get credit balance
+        [HttpGet("credit-balance")]
+        public async Task<IActionResult> GetCreditBalance()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            return Ok(new
+            {
+                creditBalance = user.CreditBalance
+            });
+        }
+
+        // Add credits to account (simulate bank transfer)
+        [HttpPost("add-credit")]
+        public async Task<IActionResult> AddCredit([FromBody] AddCreditDTO addCreditDto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            // Simulate bank transaction (in real app, integrate with payment gateway)
+            // For simulation, we just add the credit
+            user.CreditBalance += addCreditDto.Amount;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Successfully added ${addCreditDto.Amount:F2} to your account",
+                newBalance = user.CreditBalance
+            });
+        }
+
+        // Pay parking fee using account credits
+        [HttpPost("pay-parking-fee")]
+        public async Task<IActionResult> PayParkingFee([FromBody] PayParkingFeeDTO payDto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            var vehicle = await _dbContext.Vehicles
+                .FirstOrDefaultAsync(v => v.VehicleId == payDto.VehicleId && v.UserId == userId);
+
+            if (vehicle == null)
+            {
+                return NotFound(new { message = "Vehicle not found or does not belong to you" });
+            }
+
+            if (vehicle.IsPaid)
+            {
+                return BadRequest(new { message = "This parking fee has already been paid" });
+            }
+
+            if (vehicle.ExitTime == null)
+            {
+                return BadRequest(new { message = "Vehicle has not exited yet" });
+            }
+
+            if (vehicle.ParkingFee == null || vehicle.ParkingFee <= 0)
+            {
+                return BadRequest(new { message = "No parking fee to pay" });
+            }
+
+            if (user.CreditBalance < vehicle.ParkingFee)
+            {
+                return BadRequest(new
+                {
+                    message = "Insufficient credit balance",
+                    required = vehicle.ParkingFee,
+                    available = user.CreditBalance,
+                    shortfall = vehicle.ParkingFee - user.CreditBalance
+                });
+            }
+
+            // Deduct from credit balance
+            user.CreditBalance -= vehicle.ParkingFee.Value;
+            vehicle.IsPaid = true;
+
+            // Create payment record
+            var payment = new Models.Payment
+            {
+                VehicleId = vehicle.VehicleId,
+                Amount = vehicle.ParkingFee.Value,
+                PaymentTime = DateTime.UtcNow,
+                PaymentMethod = "credit"
+            };
+
+            _dbContext.Payments.Add(payment);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Payment successful",
+                amountPaid = vehicle.ParkingFee,
+                remainingBalance = user.CreditBalance
             });
         }
     }

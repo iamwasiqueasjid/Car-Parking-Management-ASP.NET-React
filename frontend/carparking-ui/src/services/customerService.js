@@ -60,4 +60,40 @@ export const customerService = {
       throw error.response?.data?.message || "Failed to fetch customer stats";
     }
   },
+
+  // Get credit balance
+  getCreditBalance: async () => {
+    try {
+      const response = await api.get("/Customer/credit-balance");
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to fetch credit balance";
+    }
+  },
+
+  // Add credit to account
+  addCredit: async (amount, bankAccountNumber, cardNumber) => {
+    try {
+      const response = await api.post("/Customer/add-credit", {
+        amount,
+        bankAccountNumber,
+        cardNumber,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to add credit";
+    }
+  },
+
+  // Pay parking fee using account credits
+  payParkingFee: async (vehicleId) => {
+    try {
+      const response = await api.post("/Customer/pay-parking-fee", {
+        vehicleId,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to process payment";
+    }
+  },
 };

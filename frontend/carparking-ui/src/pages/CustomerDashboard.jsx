@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { customerService } from "../services/customerService";
 import ConfirmModal from "../components/ConfirmModal";
+import AddCreditModal from "../components/AddCreditModal";
 import "../App.css";
 
 function CustomerDashboard() {
@@ -17,6 +18,8 @@ function CustomerDashboard() {
   const [parkingHistory, setParkingHistory] = useState([]);
   const [currentParking, setCurrentParking] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [creditBalance, setCreditBalance] = useState(0);
+  const [isAddCreditModalOpen, setIsAddCreditModalOpen] = useState(false);
 
   // Confirm modal state
   const [confirmModal, setConfirmModal] = useState({
@@ -144,14 +147,16 @@ function CustomerDashboard() {
   const loadCustomerData = async () => {
     try {
       setLoading(true);
-      const [stats, history, parking] = await Promise.all([
+      const [stats, history, parking, credit] = await Promise.all([
         customerService.getCustomerStats(),
         customerService.getParkingHistory(),
         customerService.getCurrentParking(),
+        customerService.getCreditBalance(),
       ]);
       setCustomerStats(stats);
       setParkingHistory(history);
       setCurrentParking(parking);
+      setCreditBalance(credit.creditBalance);
     } catch (error) {
       console.error("Failed to load customer data:", error);
     } finally {
@@ -207,6 +212,32 @@ function CustomerDashboard() {
   const pendingPayments = parkingHistory.filter((h) => !h.isPaid) || [];
   const paidSessions = parkingHistory.filter((h) => h.isPaid) || [];
 
+  const handlePayParkingFee = async (vehicleId, amount) => {
+    if (creditBalance < amount) {
+      showAlert(
+        "Insufficient Credits",
+        `You need $${amount.toFixed(2)} but only have $${creditBalance.toFixed(2)}. Please add credits first.`,
+        "warning"
+      );
+      return;
+    }
+
+    showConfirm(
+      "Confirm Payment",
+      `Pay $${amount.toFixed(2)} using your account credits?`,
+      async () => {
+        try {
+          const response = await customerService.payParkingFee(vehicleId);
+          showAlert("Success", response.message, "success");
+          loadCustomerData(); // Refresh data
+        } catch (error) {
+          showAlert("Payment Failed", error, "danger");
+        }
+      },
+      "info"
+    );
+  };
+
   const getHeaderTitle = () => {
     switch (activePanel) {
       case "dashboard":
@@ -215,6 +246,8 @@ function CustomerDashboard() {
         return "Pending Payments";
       case "vehicles":
         return "My Vehicles";
+      case "credit":
+        return "Account Credit";
       default:
         return "Dashboard";
     }
@@ -252,6 +285,12 @@ function CustomerDashboard() {
             >
               <span>Payments</span>
             </button>
+            <button
+              className={`sidebar-btn ${activePanel === "credit" ? "active" : ""}`}
+              onClick={() => setActivePanel("credit")}
+            >
+              <span>Account Credit</span>
+            </button>
           </nav>
 
           {/* Logout Button at Bottom */}
@@ -280,6 +319,20 @@ function CustomerDashboard() {
           <div className="page-header">
             <h2 className="mb-0">{getHeaderTitle()}</h2>
             <div className="header-actions">
+              <div className="d-flex align-items-center me-3">
+                <span className="badge bg-success px-3 py-2 fs-6">
+                  <svg
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    viewBox="0 0 16 16"
+                    className="me-2"
+                  >
+                    <path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718H4zm3.391-3.836c-1.043-.263-1.6-.825-1.6-1.616 0-.944.704-1.641 1.8-1.828v3.495l-.2-.05zm1.591 1.872c1.287.323 1.852.859 1.852 1.769 0 1.097-.826 1.828-2.2 1.939V8.73l.348.086z"/>
+                  </svg>
+                  Credit: ${creditBalance.toFixed(2)}
+                </span>
+              </div>
               <button
                 className="btn btn-sm btn-outline-primary me-3"
                 onClick={loadCustomerData}
@@ -677,7 +730,10 @@ function CustomerDashboard() {
                                     </span>
                                   </td>
                                   <td>
-                                    <button className="btn btn-sm btn-success">
+                                    <button 
+                                      className="btn btn-sm btn-success"
+                                      onClick={() => handlePayParkingFee(payment.vehicleId, payment.parkingFee)}
+                                    >
                                       Pay Now
                                     </button>
                                   </td>
@@ -745,11 +801,104 @@ function CustomerDashboard() {
                 </div>
               </>
             )}
+
+            {activePanel === "credit" && (
+              <>
+                {/* Credit Balance Card */}
+                <div className="row mb-4">
+                  <div className="col-md-6">
+                    <div className="card shadow-sm rounded-3 p-4 text-center" style={{ backgroundColor: "#f8f9fa" }}>
+                      <h6 className="text-muted mb-2">Current Balance</h6>
+                      <h1 className="display-4 fw-bold text-success mb-3">
+                        ${creditBalance.toFixed(2)}
+                      </h1>
+                      <button
+                        className="btn btn-primary btn-lg"
+                        onClick={() => setIsAddCreditModalOpen(true)}
+                      >
+                        💳 Add Credits
+                      </button>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="card shadow-sm rounded-3 p-4">
+                      <h6 className="fw-bold mb-3">How Account Credits Work</h6>
+                      <ul className="mb-0">
+                        <li className="mb-2">
+                          Add money to your account from your bank account
+                        </li>
+                        <li className="mb-2">
+                          Use credits to instantly pay parking fees
+                        </li>
+                        <li className="mb-2">
+                          No need to pay with cash or card each time
+                        </li>
+                        <li className="mb-0">
+                          Secure and convenient payment method
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Transactions */}
+                <div className="row">
+                  <div className="col-12">
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <h6 className="fw-bold mb-3">Recent Payments with Credits</h6>
+                      {paidSessions.length === 0 ? (
+                        <div className="alert alert-info">
+                          No credit payments yet
+                        </div>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-hover">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Vehicle</th>
+                                <th>Duration</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paidSessions.slice(0, 10).map((session, index) => (
+                                <tr key={index}>
+                                  <td>{formatDateTime(session.exitTime)}</td>
+                                  <td className="fw-bold">{session.vrm}</td>
+                                  <td>{formatDuration(session.duration)}</td>
+                                  <td className="fw-bold text-success">
+                                    -${session.parkingFee?.toFixed(2)}
+                                  </td>
+                                  <td>
+                                    <span
+                                      className="badge rounded-pill bg-success"
+                                    >
+                                      Paid
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Modals */}
+      <AddCreditModal
+        isOpen={isAddCreditModalOpen}
+        onClose={() => setIsAddCreditModalOpen(false)}
+        onSuccess={loadCustomerData}
+      />
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
