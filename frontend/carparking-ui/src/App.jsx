@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "./services/authService";
 import { operationService } from "./services/operationService";
+import { dashboardService } from "./services/dashboardService";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import EntryModal from "./components/EntryModal";
@@ -19,17 +20,26 @@ function App() {
   const [exitLogs, setExitLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [weeklyRevenue, setWeeklyRevenue] = useState([]);
+  const [paymentSummary, setPaymentSummary] = useState([]);
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [vehicles, logs] = await Promise.all([
+      const [vehicles, logs, stats, revenue, payments] = await Promise.all([
         operationService.getActiveVehicles(),
         operationService.getExitLogs(),
+        dashboardService.getOwnerStats(),
+        dashboardService.getWeeklyRevenue(),
+        dashboardService.getPaymentSummary(),
       ]);
       setActiveVehicles(vehicles);
       setExitLogs(logs);
+      setDashboardStats(stats);
+      setWeeklyRevenue(revenue);
+      setPaymentSummary(payments);
       setError("");
     } catch (err) {
       setError(err || "Failed to fetch dashboard data");
@@ -41,6 +51,9 @@ function App() {
   // Fetch data on component mount
   useEffect(() => {
     fetchDashboardData();
+    // Refresh data every 5 seconds for real-time updates
+    const interval = setInterval(fetchDashboardData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Format duration
@@ -55,83 +68,36 @@ function App() {
     navigate("/login");
   };
 
-  const statContainers = [
-    {
-      title: "Active vehicles",
-      score: activeVehicles.length,
-      supportingLine: "Currently parked",
-    },
-    {
-      title: "Total Capacity",
-      score: 200,
-      supportingLine: "71% occupied",
-    },
-    {
-      title: "Revenue Today",
-      score: 2845,
-      supportingLine: "+15 % yesterday",
-    },
-    {
-      title: "Average duration",
-      score: 2.5,
-      supportingLine: "-0.3 vs avg",
-    },
-  ];
-
-  const paymentSummary = [
-    {
-      status: "Paid",
-      amount: 1240,
-      quantity: 85,
-    },
-    {
-      status: "Pending",
-      amount: 340,
-      quantity: 18,
-    },
-    {
-      status: "Failed",
-      amount: 95,
-      quantity: 3,
-    },
-  ];
+  const statContainers = dashboardStats
+    ? [
+        {
+          title: "Active vehicles",
+          score: dashboardStats.activeVehicles.count,
+          supportingLine: dashboardStats.activeVehicles.change,
+        },
+        {
+          title: "Total Capacity",
+          score: `${dashboardStats.totalCapacity.percentage}%`,
+          supportingLine: `${dashboardStats.totalCapacity.occupied}/${dashboardStats.totalCapacity.capacity} occupied`,
+        },
+        {
+          title: "Revenue Today",
+          score: `$${dashboardStats.revenueToday.amount.toFixed(2)}`,
+          supportingLine: dashboardStats.revenueToday.change,
+        },
+        {
+          title: "Average duration",
+          score: `${dashboardStats.averageDuration.hours}h`,
+          supportingLine: dashboardStats.averageDuration.change,
+        },
+      ]
+    : [];
 
   const statusBg = {
-    Paid: "#d1e7dd", // green
-    Pending: "#fff3cd", // yellow
-    Failed: "#f8d7da", // red
+    Paid: "#d1e7dd",
+    Pending: "#fff3cd",
+    Failed: "#f8d7da",
   };
-
-  const weeklyRevenue = [
-    {
-      day: "Monday",
-      revenue: 2100,
-    },
-    {
-      day: "Tuesday",
-      revenue: 2400,
-    },
-    {
-      day: "Wednesday",
-      revenue: 1900,
-    },
-    {
-      day: "Thursday",
-      revenue: 2800,
-    },
-    {
-      day: "Friday",
-      revenue: 3100,
-    },
-    {
-      day: "Saturday",
-      revenue: 3400,
-    },
-    {
-      day: "Sunday",
-      revenue: 2200,
-    },
-  ];
 
   const getHeaderTitle = () => {
     switch (activePanel) {
@@ -193,6 +159,38 @@ function App() {
           <div className="page-header">
             <h2 className="mb-0">{getHeaderTitle()}</h2>
             <div className="header-actions">
+              <button
+                className="btn btn-sm btn-outline-primary me-3"
+                onClick={fetchDashboardData}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    ></span>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                      className="me-1"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                      />
+                      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                    </svg>
+                    Refresh
+                  </>
+                )}
+              </button>
               <span className="text-muted">
                 {new Date().toLocaleDateString("en-US", {
                   weekday: "long",
@@ -207,217 +205,236 @@ function App() {
           {activePanel === "dashboard" && (
             <>
               <div className="content-wrapper">
-                <div className="row">
-                  {statContainers.map((item, index) => (
-                    <div key={index} className="col-md-3 mb-4">
-                      <div
-                        className="card shadow-sm rounded-3 p-3"
-                        id="statContainer"
-                      >
-                        <h5 className="card-title">{item.title}</h5>
-                        <h2 className="card-text">{item.score}</h2>
-                        <p className="text-muted">{item.supportingLine}</p>
-                      </div>
+                {loading && !dashboardStats ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border" role="status">
+                      <span className="visually-hidden">Loading...</span>
                     </div>
-                  ))}
-                  <div className="row">
-                    <div className="col-md-9 bg-grey">
-                      <div className="card shadow-sm rounded-3 p-3">
-                        <h6 className="fw-bold mb-3">
-                          Currently Parked Vehicles
-                        </h6>
-                        {loading ? (
-                          <div className="text-center py-4">
-                            <div className="spinner-border" role="status">
-                              <span className="visually-hidden">
-                                Loading...
-                              </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="row">
+                      {statContainers.map((item, index) => (
+                        <div key={index} className="col-md-3 mb-4">
+                          <div
+                            className="card shadow-sm rounded-3 p-3"
+                            id="statContainer"
+                          >
+                            <h5 className="card-title">{item.title}</h5>
+                            <h2 className="card-text">{item.score}</h2>
+                            <p className="text-muted">{item.supportingLine}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="row">
+                      <div className="col-md-9 bg-grey">
+                        <div className="card shadow-sm rounded-3 p-3">
+                          <h6 className="fw-bold mb-3">
+                            Currently Parked Vehicles
+                          </h6>
+                          {loading ? (
+                            <div className="text-center py-4">
+                              <div className="spinner-border" role="status">
+                                <span className="visually-hidden">
+                                  Loading...
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ) : error ? (
-                          <div className="alert alert-warning" role="alert">
-                            {error}
-                          </div>
-                        ) : activeVehicles.length === 0 ? (
-                          <div className="alert alert-info" role="alert">
-                            No vehicles currently parked
-                          </div>
-                        ) : (
-                          <div className="col ">
-                            {activeVehicles.map((item, index) => (
-                              <div
-                                key={index}
-                                className="card shadow-sm rounded-3 p-3 mb-3"
-                                style={{ backgroundColor: "#F5F9FB" }}
-                              >
-                                <h6 className="card-title fw-bold">
-                                  {item.vrm.toUpperCase()}
-                                </h6>
+                          ) : error ? (
+                            <div className="alert alert-warning" role="alert">
+                              {error}
+                            </div>
+                          ) : activeVehicles.length === 0 ? (
+                            <div className="alert alert-info" role="alert">
+                              No vehicles currently parked
+                            </div>
+                          ) : (
+                            <div className="col ">
+                              {activeVehicles.map((item, index) => (
+                                <div
+                                  key={index}
+                                  className="card shadow-sm rounded-3 p-3 mb-3"
+                                  style={{ backgroundColor: "#F5F9FB" }}
+                                >
+                                  <h6 className="card-title fw-bold">
+                                    {item.vrm.toUpperCase()}
+                                  </h6>
 
-                                <div className="row">
-                                  <div className="col">
-                                    <p className="text-muted mb-1">
-                                      Entry Time
-                                    </p>
-                                    <p className="fw-bold">
+                                  <div className="row">
+                                    <div className="col">
+                                      <p className="text-muted mb-1">
+                                        Entry Time
+                                      </p>
+                                      <p className="fw-bold">
+                                        {new Date(
+                                          item.entryTime,
+                                        ).toLocaleTimeString("en-US", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </p>
+                                    </div>
+                                    <div className="col">
+                                      <p className="text-muted mb-1">
+                                        Duration
+                                      </p>
+                                      <p className="fw-bold">
+                                        {formatDuration(item.duration)}
+                                      </p>
+                                    </div>
+                                    <div className="col">
+                                      <p className="text-muted mb-1">Zone</p>
+                                      <p className="fw-bold">
+                                        {item.zone || "N/A"}
+                                      </p>
+                                    </div>
+                                    {item.customerName && (
+                                      <div className="col">
+                                        <p className="text-muted mb-1">
+                                          Customer
+                                        </p>
+                                        <p className="fw-bold">
+                                          {item.customerName}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="card shadow-sm rounded-3 p-3 my-3">
+                          <h6 className="fw-bold mb-3">Recent Exit Logs</h6>
+                          {loading ? (
+                            <div className="text-center py-4">
+                              <div className="spinner-border" role="status">
+                                <span className="visually-hidden">
+                                  Loading...
+                                </span>
+                              </div>
+                            </div>
+                          ) : exitLogs.length === 0 ? (
+                            <div className="alert alert-info" role="alert">
+                              No exit logs available
+                            </div>
+                          ) : (
+                            <table className="table">
+                              <thead>
+                                <tr>
+                                  <th scope="col">VRM</th>
+                                  <th scope="col">Entry</th>
+                                  <th scope="col">Exit</th>
+                                  <th scope="col">Duration</th>
+                                  <th scope="col">Fee</th>
+                                  <th scope="col">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {exitLogs.slice(0, 10).map((item, index) => (
+                                  <tr key={index}>
+                                    <th scope="row">
+                                      {item.vrm.toUpperCase()}
+                                    </th>
+                                    <td className="text-muted">
                                       {new Date(
                                         item.entryTime,
                                       ).toLocaleTimeString("en-US", {
                                         hour: "2-digit",
                                         minute: "2-digit",
                                       })}
-                                    </p>
-                                  </div>
-                                  <div className="col">
-                                    <p className="text-muted mb-1">Duration</p>
-                                    <p className="fw-bold">
+                                    </td>
+                                    <td className="text-muted">
+                                      {new Date(
+                                        item.exitTime,
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </td>
+                                    <td className="text-muted">
                                       {formatDuration(item.duration)}
-                                    </p>
-                                  </div>
-                                  <div className="col">
-                                    <p className="text-muted mb-1">Zone</p>
-                                    <p className="fw-bold">
-                                      {item.zone || "N/A"}
-                                    </p>
-                                  </div>
-                                  {item.customerName && (
-                                    <div className="col">
-                                      <p className="text-muted mb-1">
-                                        Customer
-                                      </p>
-                                      <p className="fw-bold">
-                                        {item.customerName}
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                                    </td>
+                                    <td className="fw-bold">
+                                      ${item.parkingFee?.toFixed(2)}
+                                    </td>
+                                    <td className="text-muted ">
+                                      <button
+                                        className={`btn btn-sm ${item.isPaid ? "btn-success" : "btn-warning"}`}
+                                      >
+                                        {item.status}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
                       </div>
-                      <div className="card shadow-sm rounded-3 p-3 my-3">
-                        <h6 className="fw-bold mb-3">Recent Exit Logs</h6>
-                        {loading ? (
-                          <div className="text-center py-4">
-                            <div className="spinner-border" role="status">
-                              <span className="visually-hidden">
-                                Loading...
+                      <div className="col-md-3">
+                        <div className="card shadow-sm rounded-3 p-3 mb-3">
+                          <h6 className="fw-bold mb-2">Payment Summary</h6>
+
+                          {paymentSummary.map((item, index) => (
+                            <div key={index} className="col mb-4">
+                              <p className="mb-1">
+                                {item.status === "Paid"
+                                  ? "Paid transaction"
+                                  : item.status === "Pending"
+                                    ? "Pending transaction"
+                                    : "Failed transaction"}
+                              </p>
+                              <p className="fw-bold mb-1">
+                                $ {item.amount.toFixed(2)}
+                              </p>
+                              <span
+                                className={`rounded-3 px-2 py-1`}
+                                style={{
+                                  backgroundColor: statusBg[item.status],
+                                }}
+                              >
+                                {item.quantity} transactions
                               </span>
                             </div>
-                          </div>
-                        ) : exitLogs.length === 0 ? (
-                          <div className="alert alert-info" role="alert">
-                            No exit logs available
-                          </div>
-                        ) : (
+                          ))}
+                        </div>
+                        <div className="card shadow-sm rounded-3 p-3 mb-3">
+                          <h6 className="fw-bold mb-3">Weekly Revenue</h6>
                           <table className="table">
                             <thead>
                               <tr>
-                                <th scope="col">VRM</th>
-                                <th scope="col">Entry</th>
-                                <th scope="col">Exit</th>
-                                <th scope="col">Duration</th>
-                                <th scope="col">Fee</th>
-                                <th scope="col">Status</th>
+                                <th scope="col">Day</th>
+                                <th scope="col">Revenue</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {exitLogs.slice(0, 10).map((item, index) => (
+                              {weeklyRevenue.map((item, index) => (
                                 <tr key={index}>
-                                  <th scope="row">{item.vrm.toUpperCase()}</th>
+                                  <th scope="row">{item.day}</th>
                                   <td className="text-muted">
-                                    {new Date(
-                                      item.entryTime,
-                                    ).toLocaleTimeString("en-US", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </td>
-                                  <td className="text-muted">
-                                    {new Date(item.exitTime).toLocaleTimeString(
-                                      "en-US",
-                                      {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      },
-                                    )}
-                                  </td>
-                                  <td className="text-muted">
-                                    {formatDuration(item.duration)}
-                                  </td>
-                                  <td className="fw-bold">
-                                    ${item.parkingFee?.toFixed(2)}
-                                  </td>
-                                  <td className="text-muted ">
-                                    <button
-                                      className={`btn btn-sm ${item.isPaid ? "btn-success" : "btn-warning"}`}
-                                    >
-                                      {item.status}
-                                    </button>
+                                    $ {item.revenue.toFixed(2)}
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                        )}
+                        </div>
+                        <div className="card shadow-sm rounded-3 p-3 mb-3">
+                          <h6 className="fw-bold mb-3">Quick Actions</h6>
+                          <button className="btn report mb-2">
+                            Generate Report
+                          </button>
+                          <button className="btn data mb-2">Export Data</button>
+                          <button className="btn settings mb-2 ">
+                            View Settings
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className="col-md-3">
-                      <div className="card shadow-sm rounded-3 p-3 mb-3">
-                        <h6 className="fw-bold mb-2">Payment Summary</h6>
-
-                        {paymentSummary.map((item, index) => (
-                          <div key={index} className="col mb-4">
-                            <p className="mb-1">
-                              {item.status === "Paid"
-                                ? "Paid transaction"
-                                : item.status === "Pending"
-                                  ? "Pending transaction"
-                                  : "Failed transaction"}
-                            </p>
-                            <p className="fw-bold mb-1">$ {item.amount}</p>
-                            <span
-                              className={`rounded-3 px-2 py-1`}
-                              style={{ backgroundColor: statusBg[item.status] }}
-                            >
-                              {item.quantity} transactions
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="card shadow-sm rounded-3 p-3 mb-3">
-                        <h6 className="fw-bold mb-3">Weekly Revenue</h6>
-                        <table class="table">
-                          <thead>
-                            <tr>
-                              <th scope="col">Day</th>
-                              <th scope="col">Revenue</th>
-                            </tr>
-                          </thead>
-                          {weeklyRevenue.map((item, index) => (
-                            <tbody>
-                              <tr key={index}>
-                                <th scope="row">{item.day}</th>
-                                <td className="text-muted">$ {item.revenue}</td>
-                              </tr>
-                            </tbody>
-                          ))}
-                        </table>
-                      </div>
-                      <div className="card shadow-sm rounded-3 p-3 mb-3">
-                        <h6 className="fw-bold mb-3">Quick Actions</h6>
-                        <button className="btn report mb-2">
-                          Generate Report
-                        </button>
-                        <button className="btn data mb-2">Export Data</button>
-                        <button className="btn settings mb-2 ">
-                          View Settings
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             </>
           )}

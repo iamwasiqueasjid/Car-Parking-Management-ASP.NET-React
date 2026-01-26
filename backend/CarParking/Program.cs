@@ -12,7 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services
 // =======================
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

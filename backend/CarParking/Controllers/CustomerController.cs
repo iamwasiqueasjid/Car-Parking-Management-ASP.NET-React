@@ -31,15 +31,6 @@ namespace CarParking.Controllers
 
             var currentVehicle = await _dbContext.Vehicles
                 .Where(v => v.UserId == userId && v.ExitTime == null)
-                .Select(v => new
-                {
-                    v.VehicleId,
-                    v.VRM,
-                    v.EntryTime,
-                    v.Zone,
-                    Duration = DateTime.UtcNow - v.EntryTime,
-                    EstimatedFee = CalculateEstimatedFee(v.EntryTime)
-                })
                 .FirstOrDefaultAsync();
 
             if (currentVehicle == null)
@@ -47,10 +38,25 @@ namespace CarParking.Controllers
                 return Ok(new { isParked = false });
             }
 
+            var duration = DateTime.UtcNow - currentVehicle.EntryTime;
+            var estimatedFee = CalculateEstimatedFee(currentVehicle.EntryTime);
+
             return Ok(new
             {
                 isParked = true,
-                vehicle = currentVehicle
+                vehicle = new
+                {
+                    currentVehicle.VehicleId,
+                    vrm = currentVehicle.VRM,
+                    currentVehicle.EntryTime,
+                    currentVehicle.Zone,
+                    duration = new
+                    {
+                        hours = (int)duration.TotalHours,
+                        minutes = duration.Minutes
+                    },
+                    estimatedFee
+                }
             });
         }
 
@@ -65,25 +71,32 @@ namespace CarParking.Controllers
                 return Unauthorized();
             }
 
-            var history = await _dbContext.Vehicles
+            var vehicles = await _dbContext.Vehicles
                 .Include(v => v.Payments)
                 .Where(v => v.UserId == userId && v.ExitTime != null)
                 .OrderByDescending(v => v.ExitTime)
-                .Select(v => new
+                .ToListAsync();
+
+            var history = vehicles.Select(v =>
+            {
+                var duration = v.ExitTime.Value - v.EntryTime;
+                return new
                 {
                     v.VehicleId,
-                    v.VRM,
+                    vrm = v.VRM,
                     v.EntryTime,
                     v.ExitTime,
-                    Duration = v.ExitTime.Value - v.EntryTime,
+                    duration = new
+                    {
+                        hours = (int)duration.TotalHours,
+                        minutes = duration.Minutes
+                    },
                     v.ParkingFee,
                     v.IsPaid,
                     v.Zone,
-                    PaymentMethod = v.Payments.FirstOrDefault() != null
-                        ? v.Payments.First().PaymentMethod
-                        : null
-                })
-                .ToListAsync();
+                    paymentMethod = v.Payments.FirstOrDefault()?.PaymentMethod
+                };
+            }).ToList();
 
             return Ok(history);
         }

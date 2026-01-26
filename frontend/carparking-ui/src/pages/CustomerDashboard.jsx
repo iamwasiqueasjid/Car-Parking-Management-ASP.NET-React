@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { customerService } from "../services/customerService";
+import ConfirmModal from "../components/ConfirmModal";
 import "../App.css";
 
 function CustomerDashboard() {
@@ -12,99 +13,45 @@ function CustomerDashboard() {
   const [newVRM, setNewVRM] = useState("");
   const [vrmError, setVrmError] = useState("");
   const [vrmLoading, setVrmLoading] = useState(false);
+  const [customerStats, setCustomerStats] = useState(null);
+  const [parkingHistory, setParkingHistory] = useState([]);
+  const [currentParking, setCurrentParking] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Dummy data - will be replaced with API calls
-  const statContainers = [
-    {
-      title: "Pending Payments",
-      score: "$45.50",
-      supportingLine: "2 unpaid sessions",
-    },
-    {
-      title: "This Week Spend",
-      score: "$127.25",
-      supportingLine: "8 parking sessions",
-    },
-    {
-      title: "Total Visits",
-      score: 42,
-      supportingLine: "This month",
-    },
-    {
-      title: "Active Parking",
-      score: 1,
-      supportingLine: "Currently parked",
-    },
-  ];
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    type: "warning",
+  });
 
-  const pendingPayments = [
-    {
-      vehiclePlate: "AB21CDE",
-      entryTime: "Jan 24, 09:15 AM",
-      exitTime: "Jan 24, 12:30 PM",
-      duration: "3h 15m",
-      fee: "$9.75",
-      status: "Pending",
-    },
-    {
-      vehiclePlate: "XY70MNO",
-      entryTime: "Jan 23, 14:20 PM",
-      exitTime: "Jan 23, 18:45 PM",
-      duration: "4h 25m",
-      fee: "$13.25",
-      status: "Pending",
-    },
-    {
-      vehiclePlate: "AB21CDE",
-      entryTime: "Jan 22, 08:00 AM",
-      exitTime: "Jan 22, 10:15 AM",
-      duration: "2h 15m",
-      fee: "$6.75",
-      status: "Pending",
-    },
-  ];
+  // Alert modal state (for success/error messages)
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "info",
+  });
 
-  const recentSessions = [
-    {
-      vehiclePlate: "AB21CDE",
-      entryTime: "Jan 20, 10:30 AM",
-      exitTime: "Jan 20, 14:45 PM",
-      duration: "4h 15m",
-      fee: "$12.75",
-      status: "Paid",
-    },
-    {
-      vehiclePlate: "XY70MNO",
-      entryTime: "Jan 19, 09:00 AM",
-      exitTime: "Jan 19, 11:30 AM",
-      duration: "2h 30m",
-      fee: "$7.50",
-      status: "Paid",
-    },
-    {
-      vehiclePlate: "AB21CDE",
-      entryTime: "Jan 18, 15:20 PM",
-      exitTime: "Jan 18, 17:35 PM",
-      duration: "2h 15m",
-      fee: "$6.75",
-      status: "Paid",
-    },
-  ];
+  const showAlert = (title, message, type = "info") => {
+    setAlertModal({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
-  const weeklySpending = [
-    { day: "Monday", amount: 15.5 },
-    { day: "Tuesday", amount: 22.75 },
-    { day: "Wednesday", amount: 18.25 },
-    { day: "Thursday", amount: 25.0 },
-    { day: "Friday", amount: 30.5 },
-    { day: "Saturday", amount: 8.75 },
-    { day: "Sunday", amount: 6.5 },
-  ];
-
-  const statusBg = {
-    Paid: "#d1e7dd",
-    Pending: "#fff3cd",
-    Failed: "#f8d7da",
+  const showConfirm = (title, message, onConfirm, type = "warning") => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      type,
+    });
   };
 
   useEffect(() => {
@@ -122,9 +69,14 @@ function CustomerDashboard() {
 
       setUser(currentUser);
       loadRegisteredVRMs();
+      loadCustomerData();
     };
 
     loadUser();
+
+    // Refresh data every 5 seconds for real-time updates
+    const interval = setInterval(loadCustomerData, 5000);
+    return () => clearInterval(interval);
   }, [navigate]);
 
   const loadRegisteredVRMs = async () => {
@@ -145,7 +97,11 @@ function CustomerDashboard() {
       const response = await customerService.addVRM(newVRM);
       setRegisteredVRMs(response.vrms);
       setNewVRM("");
-      alert(response.message || "VRM added successfully!");
+      showAlert(
+        "Success",
+        response.message || "VRM added successfully!",
+        "success",
+      );
     } catch (error) {
       setVrmError(error);
     } finally {
@@ -154,23 +110,102 @@ function CustomerDashboard() {
   };
 
   const handleRemoveVRM = async (vrm) => {
-    if (!confirm(`Are you sure you want to remove ${vrm}?`)) {
-      return;
-    }
-
-    try {
-      const response = await customerService.removeVRM(vrm);
-      setRegisteredVRMs(response.vrms);
-      alert(response.message || "VRM removed successfully!");
-    } catch (error) {
-      alert(error);
-    }
+    showConfirm(
+      "Remove Vehicle",
+      `Are you sure you want to remove ${vrm}?`,
+      async () => {
+        try {
+          const response = await customerService.removeVRM(vrm);
+          setRegisteredVRMs(response.vrms);
+          showAlert(
+            "Success",
+            response.message || "VRM removed successfully!",
+            "success",
+          );
+        } catch (error) {
+          showAlert("Error", error, "danger");
+        }
+      },
+      "danger",
+    );
   };
 
   const handleLogout = async () => {
     await authService.logout();
     navigate("/login");
   };
+
+  const statusBg = {
+    Paid: "#d1e7dd",
+    Pending: "#fff3cd",
+    Failed: "#f8d7da",
+  };
+
+  const loadCustomerData = async () => {
+    try {
+      setLoading(true);
+      const [stats, history, parking] = await Promise.all([
+        customerService.getCustomerStats(),
+        customerService.getParkingHistory(),
+        customerService.getCurrentParking(),
+      ]);
+      setCustomerStats(stats);
+      setParkingHistory(history);
+      setCurrentParking(parking);
+    } catch (error) {
+      console.error("Failed to load customer data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDuration = (duration) => {
+    if (!duration) return "N/A";
+    const hours = Math.floor(duration.hours || 0);
+    const minutes = Math.floor(duration.minutes || 0);
+    return `${hours}h ${minutes}m`;
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const statContainers = customerStats
+    ? [
+        {
+          title: "Pending Payments",
+          score: `$${customerStats.unpaidAmount.toFixed(2)}`,
+          supportingLine: "Unpaid sessions",
+        },
+        {
+          title: "Total Spent",
+          score: `$${customerStats.totalSpent.toFixed(2)}`,
+          supportingLine: "All time",
+        },
+        {
+          title: "Total Visits",
+          score: customerStats.totalVisits,
+          supportingLine: "All parking sessions",
+        },
+        {
+          title: "Active Parking",
+          score: customerStats.currentlyParked ? 1 : 0,
+          supportingLine: customerStats.currentlyParked
+            ? "Currently parked"
+            : "No active parking",
+        },
+      ]
+    : [];
+
+  const pendingPayments = parkingHistory.filter((h) => !h.isPaid) || [];
+  const paidSessions = parkingHistory.filter((h) => h.isPaid) || [];
 
   const getHeaderTitle = () => {
     switch (activePanel) {
@@ -245,6 +280,38 @@ function CustomerDashboard() {
           <div className="page-header">
             <h2 className="mb-0">{getHeaderTitle()}</h2>
             <div className="header-actions">
+              <button
+                className="btn btn-sm btn-outline-primary me-3"
+                onClick={loadCustomerData}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    ></span>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                      className="me-1"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                      />
+                      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                    </svg>
+                    Refresh
+                  </>
+                )}
+              </button>
               <span className="text-muted">
                 {new Date().toLocaleDateString("en-US", {
                   weekday: "long",
@@ -260,144 +327,131 @@ function CustomerDashboard() {
           <div className="content-wrapper">
             {activePanel === "dashboard" && (
               <>
-                {/* Stats Cards */}
-                <div className="row">
-                  {statContainers.map((item, index) => (
-                    <div key={index} className="col-md-3 mb-4">
-                      <div
-                        className="card shadow-sm rounded-3 p-3"
-                        id="statContainer"
-                      >
-                        <h5 className="card-title">{item.title}</h5>
-                        <h2 className="card-text">{item.score}</h2>
-                        <p className="text-muted">{item.supportingLine}</p>
-                      </div>
+                {loading && !customerStats ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border" role="status">
+                      <span className="visually-hidden">Loading...</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Stats Cards */}
+                    <div className="row">
+                      {statContainers.map((item, index) => (
+                        <div key={index} className="col-md-3 mb-4">
+                          <div
+                            className="card shadow-sm rounded-3 p-3"
+                            id="statContainer"
+                          >
+                            <h5 className="card-title">{item.title}</h5>
+                            <h2 className="card-text">{item.score}</h2>
+                            <p className="text-muted">{item.supportingLine}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                {/* Weekly Spending Chart */}
-                <div className="row">
-                  <div className="col-md-9">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <h6 className="fw-bold mb-3">Weekly Spending</h6>
-                      <div
-                        className="row align-items-end"
-                        style={{ height: "250px" }}
-                      >
-                        {weeklySpending.map((item, index) => {
-                          const maxAmount = Math.max(
-                            ...weeklySpending.map((d) => d.amount),
-                          );
-                          const height = (item.amount / maxAmount) * 200;
-                          return (
-                            <div key={index} className="col text-center">
-                              <div
-                                className="mb-2 mx-auto rounded-top"
-                                style={{
-                                  height: `${height}px`,
-                                  width: "40px",
-                                  backgroundColor: "#4a90e2",
-                                }}
-                              ></div>
-                              <small className="text-muted d-block">
-                                {item.day.slice(0, 3)}
-                              </small>
-                              <small className="fw-bold">${item.amount}</small>
+                    {/* Current Parking Status */}
+                    {currentParking && currentParking.isParked && (
+                      <div className="row mb-4">
+                        <div className="col-12">
+                          <div className="alert alert-success">
+                            <h6 className="fw-bold">Currently Parked</h6>
+                            <div className="row mt-3">
+                              <div className="col-md-3">
+                                <strong>Vehicle:</strong>{" "}
+                                {currentParking.vehicle.vrm}
+                              </div>
+                              <div className="col-md-3">
+                                <strong>Entry:</strong>{" "}
+                                {formatDateTime(
+                                  currentParking.vehicle.entryTime,
+                                )}
+                              </div>
+                              <div className="col-md-3">
+                                <strong>Duration:</strong>{" "}
+                                {formatDuration(
+                                  currentParking.vehicle.duration,
+                                )}
+                              </div>
+                              <div className="col-md-3">
+                                <strong>Est. Fee:</strong> $
+                                {currentParking.vehicle.estimatedFee?.toFixed(
+                                  2,
+                                )}
+                              </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
 
-                  {/* Payment Summary */}
-                  <div className="col-md-3">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <h6 className="fw-bold mb-3">Payment Status</h6>
-                      <div className="mb-3">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="text-muted">Paid</span>
-                          <span className="fw-bold text-success">$81.75</span>
+                    {/* Recent Parking Sessions */}
+                    <div className="row mt-4">
+                      <div className="col-12">
+                        <div className="card shadow-sm rounded-3 p-3">
+                          <h6 className="fw-bold mb-3">
+                            Recent Parking Sessions
+                          </h6>
+                          {paidSessions.length === 0 ? (
+                            <div className="alert alert-info">
+                              No parking history yet
+                            </div>
+                          ) : (
+                            <div className="table-responsive">
+                              <table className="table table-hover">
+                                <thead>
+                                  <tr>
+                                    <th>Vehicle</th>
+                                    <th>Entry Time</th>
+                                    <th>Exit Time</th>
+                                    <th>Duration</th>
+                                    <th>Fee</th>
+                                    <th>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {paidSessions
+                                    .slice(0, 5)
+                                    .map((session, index) => (
+                                      <tr key={index}>
+                                        <td className="fw-bold">
+                                          {session.vrm}
+                                        </td>
+                                        <td>
+                                          {formatDateTime(session.entryTime)}
+                                        </td>
+                                        <td>
+                                          {formatDateTime(session.exitTime)}
+                                        </td>
+                                        <td>
+                                          {formatDuration(session.duration)}
+                                        </td>
+                                        <td className="fw-bold">
+                                          ${session.parkingFee?.toFixed(2)}
+                                        </td>
+                                        <td>
+                                          <span
+                                            className="badge rounded-pill"
+                                            style={{
+                                              backgroundColor: statusBg.Paid,
+                                              color: "#0f5132",
+                                            }}
+                                          >
+                                            Paid
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
-                        <div className="progress" style={{ height: "6px" }}>
-                          <div
-                            className="progress-bar bg-success"
-                            style={{ width: "65%" }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div className="mb-3">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="text-muted">Pending</span>
-                          <span className="fw-bold text-warning">$45.50</span>
-                        </div>
-                        <div className="progress" style={{ height: "6px" }}>
-                          <div
-                            className="progress-bar bg-warning"
-                            style={{ width: "35%" }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-top">
-                        <div className="d-flex justify-content-between">
-                          <span className="fw-bold">Total</span>
-                          <span className="fw-bold">$127.25</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Parking Sessions */}
-                <div className="row mt-4">
-                  <div className="col-12">
-                    <div className="card shadow-sm rounded-3 p-3">
-                      <h6 className="fw-bold mb-3">Recent Parking Sessions</h6>
-                      <div className="table-responsive">
-                        <table className="table table-hover">
-                          <thead>
-                            <tr>
-                              <th>Vehicle</th>
-                              <th>Entry Time</th>
-                              <th>Exit Time</th>
-                              <th>Duration</th>
-                              <th>Fee</th>
-                              <th>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {recentSessions.map((session, index) => (
-                              <tr key={index}>
-                                <td className="fw-bold">
-                                  {session.vehiclePlate}
-                                </td>
-                                <td>{session.entryTime}</td>
-                                <td>{session.exitTime}</td>
-                                <td>{session.duration}</td>
-                                <td className="fw-bold">{session.fee}</td>
-                                <td>
-                                  <span
-                                    className="badge rounded-pill"
-                                    style={{
-                                      backgroundColor: statusBg[session.status],
-                                      color:
-                                        session.status === "Paid"
-                                          ? "#0f5132"
-                                          : "#664d03",
-                                    }}
-                                  >
-                                    {session.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </>
             )}
 
@@ -556,7 +610,12 @@ function CustomerDashboard() {
                           You have {pendingPayments.length} pending payments
                         </strong>
                         <br />
-                        <small>Total amount due: $45.50</small>
+                        <small>
+                          Total amount due: $
+                          {pendingPayments
+                            .reduce((sum, p) => sum + (p.parkingFee || 0), 0)
+                            .toFixed(2)}
+                        </small>
                       </div>
                     </div>
                   </div>
@@ -568,54 +627,66 @@ function CustomerDashboard() {
                     <div className="card shadow-sm rounded-3 p-3">
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="fw-bold mb-0">Pending Payments</h6>
-                        <button className="btn btn-primary btn-sm">
-                          Pay All ($45.50)
-                        </button>
+                        {pendingPayments.length > 0 && (
+                          <button className="btn btn-primary btn-sm">
+                            Pay All ($
+                            {pendingPayments
+                              .reduce((sum, p) => sum + (p.parkingFee || 0), 0)
+                              .toFixed(2)}
+                            )
+                          </button>
+                        )}
                       </div>
-                      <div className="table-responsive">
-                        <table className="table table-hover">
-                          <thead>
-                            <tr>
-                              <th>Vehicle</th>
-                              <th>Entry Time</th>
-                              <th>Exit Time</th>
-                              <th>Duration</th>
-                              <th>Fee</th>
-                              <th>Status</th>
-                              <th>Action</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pendingPayments.map((payment, index) => (
-                              <tr key={index}>
-                                <td className="fw-bold">
-                                  {payment.vehiclePlate}
-                                </td>
-                                <td>{payment.entryTime}</td>
-                                <td>{payment.exitTime}</td>
-                                <td>{payment.duration}</td>
-                                <td className="fw-bold">{payment.fee}</td>
-                                <td>
-                                  <span
-                                    className="badge rounded-pill"
-                                    style={{
-                                      backgroundColor: statusBg[payment.status],
-                                      color: "#664d03",
-                                    }}
-                                  >
-                                    {payment.status}
-                                  </span>
-                                </td>
-                                <td>
-                                  <button className="btn btn-sm btn-success">
-                                    Pay Now
-                                  </button>
-                                </td>
+                      {pendingPayments.length === 0 ? (
+                        <div className="alert alert-success">
+                          No pending payments
+                        </div>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-hover">
+                            <thead>
+                              <tr>
+                                <th>Vehicle</th>
+                                <th>Entry Time</th>
+                                <th>Exit Time</th>
+                                <th>Duration</th>
+                                <th>Fee</th>
+                                <th>Status</th>
+                                <th>Action</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {pendingPayments.map((payment, index) => (
+                                <tr key={index}>
+                                  <td className="fw-bold">{payment.vrm}</td>
+                                  <td>{formatDateTime(payment.entryTime)}</td>
+                                  <td>{formatDateTime(payment.exitTime)}</td>
+                                  <td>{formatDuration(payment.duration)}</td>
+                                  <td className="fw-bold">
+                                    ${payment.parkingFee?.toFixed(2)}
+                                  </td>
+                                  <td>
+                                    <span
+                                      className="badge rounded-pill"
+                                      style={{
+                                        backgroundColor: statusBg.Pending,
+                                        color: "#664d03",
+                                      }}
+                                    >
+                                      Pending
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <button className="btn btn-sm btn-success">
+                                      Pay Now
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -625,44 +696,50 @@ function CustomerDashboard() {
                   <div className="col-12">
                     <div className="card shadow-sm rounded-3 p-3">
                       <h6 className="fw-bold mb-3">Payment History</h6>
-                      <div className="table-responsive">
-                        <table className="table table-hover">
-                          <thead>
-                            <tr>
-                              <th>Vehicle</th>
-                              <th>Entry Time</th>
-                              <th>Exit Time</th>
-                              <th>Duration</th>
-                              <th>Fee</th>
-                              <th>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {recentSessions.map((session, index) => (
-                              <tr key={index}>
-                                <td className="fw-bold">
-                                  {session.vehiclePlate}
-                                </td>
-                                <td>{session.entryTime}</td>
-                                <td>{session.exitTime}</td>
-                                <td>{session.duration}</td>
-                                <td className="fw-bold">{session.fee}</td>
-                                <td>
-                                  <span
-                                    className="badge rounded-pill"
-                                    style={{
-                                      backgroundColor: statusBg[session.status],
-                                      color: "#0f5132",
-                                    }}
-                                  >
-                                    {session.status}
-                                  </span>
-                                </td>
+                      {paidSessions.length === 0 ? (
+                        <div className="alert alert-info">
+                          No payment history yet
+                        </div>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-hover">
+                            <thead>
+                              <tr>
+                                <th>Vehicle</th>
+                                <th>Entry Time</th>
+                                <th>Exit Time</th>
+                                <th>Duration</th>
+                                <th>Fee</th>
+                                <th>Status</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {paidSessions.map((session, index) => (
+                                <tr key={index}>
+                                  <td className="fw-bold">{session.vrm}</td>
+                                  <td>{formatDateTime(session.entryTime)}</td>
+                                  <td>{formatDateTime(session.exitTime)}</td>
+                                  <td>{formatDuration(session.duration)}</td>
+                                  <td className="fw-bold">
+                                    ${session.parkingFee?.toFixed(2)}
+                                  </td>
+                                  <td>
+                                    <span
+                                      className="badge rounded-pill"
+                                      style={{
+                                        backgroundColor: statusBg.Paid,
+                                        color: "#0f5132",
+                                      }}
+                                    >
+                                      Paid
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -671,6 +748,26 @@ function CustomerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        onConfirm={() => setAlertModal({ ...alertModal, isOpen: false })}
+        title={alertModal.title}
+        message={alertModal.message}
+        confirmText="OK"
+        cancelText=""
+        type={alertModal.type}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { operationService } from "../services/operationService";
+import ConfirmModal from "./ConfirmModal";
 
 function ParkingRateModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -8,6 +9,7 @@ function ParkingRateModal({ isOpen, onClose, onSuccess }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,11 +29,10 @@ function ParkingRateModal({ isOpen, onClose, onSuccess }) {
       const response = await operationService.addRate({
         hourlyRate: parseFloat(formData.hourlyRate),
       });
-      alert(
+      setSuccessMessage(
         response.message ||
           `Parking rate of $${formData.hourlyRate}/hour added successfully!`,
       );
-      handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
       setError(err || "Failed to add parking rate");
@@ -44,6 +45,7 @@ function ParkingRateModal({ isOpen, onClose, onSuccess }) {
     setFormData({ hourlyRate: "" });
     setError("");
     setLoading(false);
+    setSuccessMessage("");
     onClose();
   };
 
@@ -116,6 +118,23 @@ function ParkingRateModal({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!successMessage}
+        onClose={() => {
+          setSuccessMessage("");
+          handleClose();
+        }}
+        onConfirm={() => {
+          setSuccessMessage("");
+          handleClose();
+        }}
+        title="Success"
+        message={successMessage}
+        confirmText="OK"
+        cancelText=""
+        type="success"
+      />
     </div>
   );
 }

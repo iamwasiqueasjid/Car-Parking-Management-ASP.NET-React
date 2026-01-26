@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { operationService } from "../services/operationService";
+import ConfirmModal from "./ConfirmModal";
 
 function EntryModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ function EntryModal({ isOpen, onClose, onSuccess }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,11 +28,10 @@ function EntryModal({ isOpen, onClose, onSuccess }) {
 
     try {
       const response = await operationService.entry(formData);
-      alert(
+      setSuccessMessage(
         response.message ||
           `Vehicle ${formData.vrm} entry recorded successfully!`,
       );
-      handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
       setError(err || "Failed to record vehicle entry");
@@ -43,6 +44,7 @@ function EntryModal({ isOpen, onClose, onSuccess }) {
     setFormData({ vrm: "", zone: "" });
     setError("");
     setLoading(false);
+    setSuccessMessage("");
     onClose();
   };
 
@@ -125,6 +127,23 @@ function EntryModal({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!successMessage}
+        onClose={() => {
+          setSuccessMessage("");
+          handleClose();
+        }}
+        onConfirm={() => {
+          setSuccessMessage("");
+          handleClose();
+        }}
+        title="Success"
+        message={successMessage}
+        confirmText="OK"
+        cancelText=""
+        type="success"
+      />
     </div>
   );
 }
