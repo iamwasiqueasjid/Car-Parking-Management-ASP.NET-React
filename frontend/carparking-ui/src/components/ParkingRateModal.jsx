@@ -25,9 +25,12 @@ function ParkingRateModal({ isOpen, onClose, onSuccess }) {
 
     try {
       const response = await operationService.addRate({
-        hourlyRate: parseFloat(formData.hourlyRate)
+        hourlyRate: parseFloat(formData.hourlyRate),
       });
-      alert(response.message || `Parking rate of $${formData.hourlyRate}/hour added successfully!`);
+      alert(
+        response.message ||
+          `Parking rate of $${formData.hourlyRate}/hour added successfully!`,
+      );
       handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -101,7 +104,11 @@ function ParkingRateModal({ isOpen, onClose, onSuccess }) {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading}
+                >
                   {loading ? "Adding..." : "Add Rate"}
                 </button>
               </div>

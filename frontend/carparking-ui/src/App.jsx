@@ -229,7 +229,9 @@ function App() {
                         {loading ? (
                           <div className="text-center py-4">
                             <div className="spinner-border" role="status">
-                              <span className="visually-hidden">Loading...</span>
+                              <span className="visually-hidden">
+                                Loading...
+                              </span>
                             </div>
                           </div>
                         ) : error ? (
@@ -254,26 +256,38 @@ function App() {
 
                                 <div className="row">
                                   <div className="col">
-                                    <p className="text-muted mb-1">Entry Time</p>
+                                    <p className="text-muted mb-1">
+                                      Entry Time
+                                    </p>
                                     <p className="fw-bold">
-                                      {new Date(item.entryTime).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
+                                      {new Date(
+                                        item.entryTime,
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
                                       })}
                                     </p>
                                   </div>
                                   <div className="col">
                                     <p className="text-muted mb-1">Duration</p>
-                                    <p className="fw-bold">{formatDuration(item.duration)}</p>
+                                    <p className="fw-bold">
+                                      {formatDuration(item.duration)}
+                                    </p>
                                   </div>
                                   <div className="col">
                                     <p className="text-muted mb-1">Zone</p>
-                                    <p className="fw-bold">{item.zone || 'N/A'}</p>
+                                    <p className="fw-bold">
+                                      {item.zone || "N/A"}
+                                    </p>
                                   </div>
                                   {item.customerName && (
                                     <div className="col">
-                                      <p className="text-muted mb-1">Customer</p>
-                                      <p className="fw-bold">{item.customerName}</p>
+                                      <p className="text-muted mb-1">
+                                        Customer
+                                      </p>
+                                      <p className="fw-bold">
+                                        {item.customerName}
+                                      </p>
                                     </div>
                                   )}
                                 </div>
@@ -287,7 +301,9 @@ function App() {
                         {loading ? (
                           <div className="text-center py-4">
                             <div className="spinner-border" role="status">
-                              <span className="visually-hidden">Loading...</span>
+                              <span className="visually-hidden">
+                                Loading...
+                              </span>
                             </div>
                           </div>
                         ) : exitLogs.length === 0 ? (
@@ -311,19 +327,28 @@ function App() {
                                 <tr key={index}>
                                   <th scope="row">{item.vrm.toUpperCase()}</th>
                                   <td className="text-muted">
-                                    {new Date(item.entryTime).toLocaleTimeString('en-US', {
-                                      hour: '2-digit',
-                                      minute: '2-digit'
+                                    {new Date(
+                                      item.entryTime,
+                                    ).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
                                     })}
                                   </td>
                                   <td className="text-muted">
-                                    {new Date(item.exitTime).toLocaleTimeString('en-US', {
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
+                                    {new Date(item.exitTime).toLocaleTimeString(
+                                      "en-US",
+                                      {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      },
+                                    )}
                                   </td>
-                                  <td className="text-muted">{formatDuration(item.duration)}</td>
-                                  <td className="fw-bold">${item.parkingFee?.toFixed(2)}</td>
+                                  <td className="text-muted">
+                                    {formatDuration(item.duration)}
+                                  </td>
+                                  <td className="fw-bold">
+                                    ${item.parkingFee?.toFixed(2)}
+                                  </td>
                                   <td className="text-muted ">
                                     <button
                                       className={`btn btn-sm ${item.isPaid ? "btn-success" : "btn-warning"}`}

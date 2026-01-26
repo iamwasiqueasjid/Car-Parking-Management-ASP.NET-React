@@ -32,6 +32,21 @@ namespace CarParking.Controllers
                 userId = parsedUserId;
             }
 
+            var normalizedVRM = addVehicleDTO.VRM.Replace(" ", "").ToLower();
+
+            // Auto-link to customer if VRM is pre-registered (only for Owner entries)
+            if (userRole == "Owner" && userId == null)
+            {
+                var registeredUser = await _dbContext.Users
+                    .Where(u => u.RegisteredVRMs != null && u.RegisteredVRMs.Contains(normalizedVRM))
+                    .FirstOrDefaultAsync();
+
+                if (registeredUser != null)
+                {
+                    userId = registeredUser.UserId;
+                }
+            }
+
             // Validate zone if provided
             if (!string.IsNullOrWhiteSpace(addVehicleDTO.Zone))
             {
@@ -48,7 +63,7 @@ namespace CarParking.Controllers
 
             var vehicle = new Vehicle()
             {
-                VRM = addVehicleDTO.VRM.Replace(" ", "").ToLower(),
+                VRM = normalizedVRM,
                 EntryTime = DateTime.UtcNow,
                 Zone = addVehicleDTO.Zone?.ToUpper(),
                 UserId = userId
@@ -57,11 +72,29 @@ namespace CarParking.Controllers
             await _dbContext.Vehicles.AddAsync(vehicle);
             await _dbContext.SaveChangesAsync();
 
+            // Get customer name if linked
+            string? customerName = null;
+            if (userId.HasValue)
+            {
+                var customer = await _dbContext.Users.FindAsync(userId.Value);
+                customerName = customer?.FullName;
+            }
+
             return Ok(new
             {
                 success = true,
-                message = "Vehicle entry recorded successfully",
-                vehicle = vehicle
+                message = userId.HasValue
+                    ? $"Vehicle entry recorded and linked to {customerName}"
+                    : "Vehicle entry recorded (walk-in customer)",
+                vehicle = new
+                {
+                    vehicle.VehicleId,
+                    vehicle.VRM,
+                    vehicle.EntryTime,
+                    vehicle.Zone,
+                    vehicle.UserId,
+                    CustomerName = customerName
+                }
             });
         }
 

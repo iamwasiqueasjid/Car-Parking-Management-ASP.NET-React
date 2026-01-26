@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
+import { customerService } from "../services/customerService";
 import "../App.css";
 
 function CustomerDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [activePanel, setActivePanel] = useState("dashboard");
+  const [registeredVRMs, setRegisteredVRMs] = useState([]);
+  const [newVRM, setNewVRM] = useState("");
+  const [vrmError, setVrmError] = useState("");
+  const [vrmLoading, setVrmLoading] = useState(false);
 
   // Dummy data - will be replaced with API calls
   const statContainers = [
@@ -116,10 +121,51 @@ function CustomerDashboard() {
       }
 
       setUser(currentUser);
+      loadRegisteredVRMs();
     };
 
     loadUser();
   }, [navigate]);
+
+  const loadRegisteredVRMs = async () => {
+    try {
+      const vrms = await customerService.getRegisteredVRMs();
+      setRegisteredVRMs(vrms);
+    } catch (error) {
+      console.error("Failed to load VRMs:", error);
+    }
+  };
+
+  const handleAddVRM = async (e) => {
+    e.preventDefault();
+    setVrmError("");
+    setVrmLoading(true);
+
+    try {
+      const response = await customerService.addVRM(newVRM);
+      setRegisteredVRMs(response.vrms);
+      setNewVRM("");
+      alert(response.message || "VRM added successfully!");
+    } catch (error) {
+      setVrmError(error);
+    } finally {
+      setVrmLoading(false);
+    }
+  };
+
+  const handleRemoveVRM = async (vrm) => {
+    if (!confirm(`Are you sure you want to remove ${vrm}?`)) {
+      return;
+    }
+
+    try {
+      const response = await customerService.removeVRM(vrm);
+      setRegisteredVRMs(response.vrms);
+      alert(response.message || "VRM removed successfully!");
+    } catch (error) {
+      alert(error);
+    }
+  };
 
   const handleLogout = async () => {
     await authService.logout();
@@ -132,6 +178,8 @@ function CustomerDashboard() {
         return "Overview";
       case "payments":
         return "Pending Payments";
+      case "vehicles":
+        return "My Vehicles";
       default:
         return "Dashboard";
     }
@@ -156,6 +204,12 @@ function CustomerDashboard() {
               onClick={() => setActivePanel("dashboard")}
             >
               <span>Dashboard</span>
+            </button>
+            <button
+              className={`sidebar-btn ${activePanel === "vehicles" ? "active" : ""}`}
+              onClick={() => setActivePanel("vehicles")}
+            >
+              <span>My Vehicles</span>
             </button>
             <button
               className={`sidebar-btn ${activePanel === "payments" ? "active" : ""}`}
@@ -341,6 +395,141 @@ function CustomerDashboard() {
                           </tbody>
                         </table>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activePanel === "vehicles" && (
+              <>
+                {/* My Vehicles Header */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <div className="alert alert-info d-flex align-items-center">
+                      <svg
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                        className="me-2"
+                      >
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                      </svg>
+                      <div>
+                        <strong>Pre-register your vehicle plates</strong>
+                        <br />
+                        <small>
+                          When the owner records your vehicle entry, it will
+                          automatically be linked to your account
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add New VRM Form */}
+                <div className="row mb-4">
+                  <div className="col-md-6">
+                    <div className="card shadow-sm rounded-3 p-4">
+                      <h6 className="fw-bold mb-3">Register New Vehicle</h6>
+                      {vrmError && (
+                        <div className="alert alert-danger" role="alert">
+                          {vrmError}
+                        </div>
+                      )}
+                      <form onSubmit={handleAddVRM}>
+                        <div className="mb-3">
+                          <label htmlFor="vrm" className="form-label">
+                            Vehicle Registration Mark (VRM)
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="vrm"
+                            value={newVRM}
+                            onChange={(e) => {
+                              setNewVRM(e.target.value);
+                              setVrmError("");
+                            }}
+                            placeholder="e.g., ABC123, XY21ZZZ"
+                            required
+                            disabled={vrmLoading}
+                          />
+                          <div className="form-text">
+                            Enter your vehicle's registration number
+                          </div>
+                        </div>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={vrmLoading}
+                        >
+                          {vrmLoading ? "Adding..." : "Add Vehicle"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <div className="col-md-6">
+                    <div className="card shadow-sm rounded-3 p-4">
+                      <h6 className="fw-bold mb-3">How It Works</h6>
+                      <ol className="mb-0">
+                        <li className="mb-2">
+                          Register your vehicle plate number here
+                        </li>
+                        <li className="mb-2">
+                          When you arrive at the parking lot, the owner will
+                          enter your VRM
+                        </li>
+                        <li className="mb-2">
+                          Your vehicle will automatically be linked to your
+                          account
+                        </li>
+                        <li className="mb-0">
+                          You can view and pay for your parking sessions here
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Registered Vehicles List */}
+                <div className="row">
+                  <div className="col-12">
+                    <div className="card shadow-sm rounded-3 p-3">
+                      <h6 className="fw-bold mb-3">
+                        Registered Vehicles ({registeredVRMs.length})
+                      </h6>
+                      {registeredVRMs.length === 0 ? (
+                        <div className="alert alert-secondary" role="alert">
+                          No vehicles registered yet. Add your first vehicle
+                          above.
+                        </div>
+                      ) : (
+                        <div className="row">
+                          {registeredVRMs.map((vrm, index) => (
+                            <div key={index} className="col-md-4 mb-3">
+                              <div className="card border">
+                                <div className="card-body d-flex justify-content-between align-items-center">
+                                  <div>
+                                    <h5 className="mb-0 fw-bold">{vrm}</h5>
+                                    <small className="text-muted">
+                                      Registered Vehicle
+                                    </small>
+                                  </div>
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleRemoveVRM(vrm)}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -74,11 +74,25 @@ function ExitModal({ isOpen, onClose, onSuccess }) {
               <div className="alert alert-success" role="alert">
                 <h6 className="alert-heading">Exit Recorded Successfully!</h6>
                 <hr />
-                <p className="mb-1"><strong>VRM:</strong> {exitInfo.vrm}</p>
-                <p className="mb-1"><strong>Entry:</strong> {new Date(exitInfo.entryTime).toLocaleString()}</p>
-                <p className="mb-1"><strong>Exit:</strong> {new Date(exitInfo.exitTime).toLocaleString()}</p>
-                <p className="mb-1"><strong>Parking Fee:</strong> ${exitInfo.parkingFee?.toFixed(2)}</p>
-                <p className="mb-0"><strong>Payment Status:</strong> {exitInfo.isPaid ? "Paid" : "Pending"}</p>
+                <p className="mb-1">
+                  <strong>VRM:</strong> {exitInfo.vrm}
+                </p>
+                <p className="mb-1">
+                  <strong>Entry:</strong>{" "}
+                  {new Date(exitInfo.entryTime).toLocaleString()}
+                </p>
+                <p className="mb-1">
+                  <strong>Exit:</strong>{" "}
+                  {new Date(exitInfo.exitTime).toLocaleString()}
+                </p>
+                <p className="mb-1">
+                  <strong>Parking Fee:</strong> $
+                  {exitInfo.parkingFee?.toFixed(2)}
+                </p>
+                <p className="mb-0">
+                  <strong>Payment Status:</strong>{" "}
+                  {exitInfo.isPaid ? "Paid" : "Pending"}
+                </p>
               </div>
             )}
             <form onSubmit={handleSubmit}>
@@ -111,7 +125,11 @@ function ExitModal({ isOpen, onClose, onSuccess }) {
                   {exitInfo ? "Close" : "Cancel"}
                 </button>
                 {!exitInfo && (
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
                     {loading ? "Processing..." : "Process Exit"}
                   </button>
                 )}

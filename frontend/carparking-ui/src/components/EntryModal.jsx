@@ -26,7 +26,10 @@ function EntryModal({ isOpen, onClose, onSuccess }) {
 
     try {
       const response = await operationService.entry(formData);
-      alert(response.message || `Vehicle ${formData.vrm} entry recorded successfully!`);
+      alert(
+        response.message ||
+          `Vehicle ${formData.vrm} entry recorded successfully!`,
+      );
       handleClose();
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -110,7 +113,11 @@ function EntryModal({ isOpen, onClose, onSuccess }) {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading}
+                >
                   {loading ? "Recording..." : "Record Entry"}
                 </button>
               </div>

@@ -28,6 +28,9 @@ namespace CarParking.Models
 
         public bool IsActive { get; set; } = true;
 
+        // Registered VRMs for this customer (comma-separated or collection)
+        public string? RegisteredVRMs { get; set; }
+
         public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
     }
 
