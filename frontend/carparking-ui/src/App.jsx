@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "./services/authService";
+import { operationService } from "./services/operationService";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import EntryModal from "./components/EntryModal";
@@ -10,6 +11,45 @@ import ParkingRateModal from "./components/ParkingRateModal";
 function App() {
   const navigate = useNavigate();
 
+  const [activePanel, setActivePanel] = useState("dashboard");
+  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isParkingRateModalOpen, setIsParkingRateModalOpen] = useState(false);
+  const [activeVehicles, setActiveVehicles] = useState([]);
+  const [exitLogs, setExitLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [vehicles, logs] = await Promise.all([
+        operationService.getActiveVehicles(),
+        operationService.getExitLogs(),
+      ]);
+      setActiveVehicles(vehicles);
+      setExitLogs(logs);
+      setError("");
+    } catch (err) {
+      setError(err || "Failed to fetch dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Format duration
+  const formatDuration = (duration) => {
+    const hours = Math.floor(duration.hours || 0);
+    const minutes = Math.floor(duration.minutes || 0);
+    return `${hours}h ${minutes}m`;
+  };
+
   const handleLogout = async () => {
     await authService.logout();
     navigate("/login");
@@ -18,8 +58,8 @@ function App() {
   const statContainers = [
     {
       title: "Active vehicles",
-      score: 142,
-      supportingLine: "+12 today",
+      score: activeVehicles.length,
+      supportingLine: "Currently parked",
     },
     {
       title: "Total Capacity",
@@ -35,59 +75,6 @@ function App() {
       title: "Average duration",
       score: 2.5,
       supportingLine: "-0.3 vs avg",
-    },
-  ];
-
-  const currentlyParked = [
-    {
-      plateName: "AB21CDE",
-      entryTime: "09:15 AM",
-      duration: "3h 45m",
-      zone: "A1",
-    },
-    {
-      plateName: "XY70MNO",
-      entryTime: "09:15 AM",
-      duration: "3h 45m",
-      zone: "A1",
-    },
-    {
-      plateName: "CD19PQR",
-      entryTime: "09:15 AM",
-      duration: "3h 45m",
-      zone: "A1",
-    },
-    {
-      plateName: "GH82STU",
-      entryTime: "09:15 AM",
-      duration: "3h 45m",
-      zone: "A1",
-    },
-  ];
-  const exitLogs = [
-    {
-      VRM: "LM06ABC",
-      Entry: "06:09 AM",
-      Exit: "09:45 AM",
-      Duration: "3h 15m",
-      Fee: "$9.75",
-      Status: "Paid",
-    },
-    {
-      VRM: "N092DEF",
-      Entry: "07:15 AM",
-      Exit: "10:30 AM",
-      Duration: "3h 15m",
-      Fee: "$9.75",
-      Status: "Pending",
-    },
-    {
-      VRM: "PQ45GHI",
-      Entry: "06:09 AM",
-      Exit: "09:45 AM",
-      Duration: "3h 15m",
-      Fee: "$9.75",
-      Status: "Paid",
     },
   ];
 
@@ -145,11 +132,6 @@ function App() {
       revenue: 2200,
     },
   ];
-
-  const [activePanel, setActivePanel] = useState("dashboard");
-  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-  const [isParkingRateModalOpen, setIsParkingRateModalOpen] = useState(false);
 
   const getHeaderTitle = () => {
     switch (activePanel) {
@@ -244,67 +226,116 @@ function App() {
                         <h6 className="fw-bold mb-3">
                           Currently Parked Vehicles
                         </h6>
-                        <div className="col ">
-                          {currentlyParked.map((item, index) => (
-                            <div
-                              key={index}
-                              className="card shadow-sm rounded-3 p-3 mb-3"
-                              style={{ backgroundColor: "#F5F9FB" }}
-                            >
-                              <h6 className="card-title fw-bold">
-                                {item.plateName}
-                              </h6>
+                        {loading ? (
+                          <div className="text-center py-4">
+                            <div className="spinner-border" role="status">
+                              <span className="visually-hidden">Loading...</span>
+                            </div>
+                          </div>
+                        ) : error ? (
+                          <div className="alert alert-warning" role="alert">
+                            {error}
+                          </div>
+                        ) : activeVehicles.length === 0 ? (
+                          <div className="alert alert-info" role="alert">
+                            No vehicles currently parked
+                          </div>
+                        ) : (
+                          <div className="col ">
+                            {activeVehicles.map((item, index) => (
+                              <div
+                                key={index}
+                                className="card shadow-sm rounded-3 p-3 mb-3"
+                                style={{ backgroundColor: "#F5F9FB" }}
+                              >
+                                <h6 className="card-title fw-bold">
+                                  {item.vrm.toUpperCase()}
+                                </h6>
 
-                              <div className="row">
-                                <div className="col">
-                                  <p className="text-muted mb-1">Entry Time</p>
-                                  <p className="fw-bold">{item.entryTime}</p>
-                                </div>
-                                <div className="col">
-                                  <p className="text-muted mb-1">Duration</p>
-                                  <p className="fw-bold">{item.duration}</p>
-                                </div>
-                                <div className="col">
-                                  <p className="text-muted mb-1">Zone</p>
-                                  <p className="fw-bold">{item.zone}</p>
+                                <div className="row">
+                                  <div className="col">
+                                    <p className="text-muted mb-1">Entry Time</p>
+                                    <p className="fw-bold">
+                                      {new Date(item.entryTime).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  </div>
+                                  <div className="col">
+                                    <p className="text-muted mb-1">Duration</p>
+                                    <p className="fw-bold">{formatDuration(item.duration)}</p>
+                                  </div>
+                                  <div className="col">
+                                    <p className="text-muted mb-1">Zone</p>
+                                    <p className="fw-bold">{item.zone || 'N/A'}</p>
+                                  </div>
+                                  {item.customerName && (
+                                    <div className="col">
+                                      <p className="text-muted mb-1">Customer</p>
+                                      <p className="fw-bold">{item.customerName}</p>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="card shadow-sm rounded-3 p-3 my-3">
                         <h6 className="fw-bold mb-3">Recent Exit Logs</h6>
-                        <table class="table">
-                          <thead>
-                            <tr>
-                              <th scope="col">VRM</th>
-                              <th scope="col">Entry</th>
-                              <th scope="col">Exit</th>
-                              <th scope="col">Duration</th>
-                              <th scope="col">Fee</th>
-                              <th scope="col">Status</th>
-                            </tr>
-                          </thead>
-                          {exitLogs.map((item, index) => (
-                            <tbody>
-                              <tr key={index}>
-                                <th scope="row">{item.VRM}</th>
-                                <td className="text-muted">{item.Entry}</td>
-                                <td className="text-muted">{item.Exit}</td>
-                                <td className="text-muted">{item.Duration}</td>
-                                <td className="fw-bold">{item.Fee}</td>
-                                <td className="text-muted ">
-                                  <button
-                                    className={`${item.Status === "Paid" ? "btn btn-success" : "btn btn-warning"}`}
-                                  >
-                                    {item.Status}
-                                  </button>
-                                </td>
+                        {loading ? (
+                          <div className="text-center py-4">
+                            <div className="spinner-border" role="status">
+                              <span className="visually-hidden">Loading...</span>
+                            </div>
+                          </div>
+                        ) : exitLogs.length === 0 ? (
+                          <div className="alert alert-info" role="alert">
+                            No exit logs available
+                          </div>
+                        ) : (
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th scope="col">VRM</th>
+                                <th scope="col">Entry</th>
+                                <th scope="col">Exit</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Fee</th>
+                                <th scope="col">Status</th>
                               </tr>
+                            </thead>
+                            <tbody>
+                              {exitLogs.slice(0, 10).map((item, index) => (
+                                <tr key={index}>
+                                  <th scope="row">{item.vrm.toUpperCase()}</th>
+                                  <td className="text-muted">
+                                    {new Date(item.entryTime).toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </td>
+                                  <td className="text-muted">
+                                    {new Date(item.exitTime).toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </td>
+                                  <td className="text-muted">{formatDuration(item.duration)}</td>
+                                  <td className="fw-bold">${item.parkingFee?.toFixed(2)}</td>
+                                  <td className="text-muted ">
+                                    <button
+                                      className={`btn btn-sm ${item.isPaid ? "btn-success" : "btn-warning"}`}
+                                    >
+                                      {item.status}
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
                             </tbody>
-                          ))}
-                        </table>
+                          </table>
+                        )}
                       </div>
                     </div>
                     <div className="col-md-3">
@@ -418,14 +449,17 @@ function App() {
           <EntryModal
             isOpen={isEntryModalOpen}
             onClose={() => setIsEntryModalOpen(false)}
+            onSuccess={fetchDashboardData}
           />
           <ExitModal
             isOpen={isExitModalOpen}
             onClose={() => setIsExitModalOpen(false)}
+            onSuccess={fetchDashboardData}
           />
           <ParkingRateModal
             isOpen={isParkingRateModalOpen}
             onClose={() => setIsParkingRateModalOpen(false)}
+            onSuccess={fetchDashboardData}
           />
         </div>
       </div>

@@ -1,10 +1,14 @@
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { operationService } from "../services/operationService";
 
-function ExitModal({ isOpen, onClose }) {
+function ExitModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     vrm: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [exitInfo, setExitInfo] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -12,19 +16,30 @@ function ExitModal({ isOpen, onClose }) {
       ...prev,
       [name]: value,
     }));
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Exit Data:", formData);
-    // TODO: Add API call here to process exit
-    // Example: axios.post('/api/movements/exit', { vrm: formData.vrm })
-    alert(`Vehicle ${formData.vrm} exit processed!`);
-    handleClose();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await operationService.exit(formData.vrm);
+      setExitInfo(response.vehicle);
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setError(err || "Failed to process vehicle exit");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
     setFormData({ vrm: "" });
+    setError("");
+    setLoading(false);
+    setExitInfo(null);
     onClose();
   };
 
@@ -50,6 +65,22 @@ function ExitModal({ isOpen, onClose }) {
             ></button>
           </div>
           <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
+            )}
+            {exitInfo && (
+              <div className="alert alert-success" role="alert">
+                <h6 className="alert-heading">Exit Recorded Successfully!</h6>
+                <hr />
+                <p className="mb-1"><strong>VRM:</strong> {exitInfo.vrm}</p>
+                <p className="mb-1"><strong>Entry:</strong> {new Date(exitInfo.entryTime).toLocaleString()}</p>
+                <p className="mb-1"><strong>Exit:</strong> {new Date(exitInfo.exitTime).toLocaleString()}</p>
+                <p className="mb-1"><strong>Parking Fee:</strong> ${exitInfo.parkingFee?.toFixed(2)}</p>
+                <p className="mb-0"><strong>Payment Status:</strong> {exitInfo.isPaid ? "Paid" : "Pending"}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label htmlFor="vrm" className="form-label">
@@ -75,12 +106,15 @@ function ExitModal({ isOpen, onClose }) {
                   type="button"
                   className="btn btn-secondary"
                   onClick={handleClose}
+                  disabled={loading}
                 >
-                  Cancel
+                  {exitInfo ? "Close" : "Cancel"}
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Process Exit
-                </button>
+                {!exitInfo && (
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? "Processing..." : "Process Exit"}
+                  </button>
+                )}
               </div>
             </form>
           </div>

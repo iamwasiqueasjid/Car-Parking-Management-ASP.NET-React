@@ -1,10 +1,13 @@
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { operationService } from "../services/operationService";
 
-function ParkingRateModal({ isOpen, onClose }) {
+function ParkingRateModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     hourlyRate: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -12,19 +15,32 @@ function ParkingRateModal({ isOpen, onClose }) {
       ...prev,
       [name]: value,
     }));
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Parking Rate Data:", formData);
-    // TODO: Add API call here to add parking rate
-    // Example: axios.post('/api/parkingrates', { hourlyRate: parseFloat(formData.hourlyRate) })
-    alert(`Parking rate of $${formData.hourlyRate}/hour added successfully!`);
-    handleClose();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await operationService.addRate({
+        hourlyRate: parseFloat(formData.hourlyRate)
+      });
+      alert(response.message || `Parking rate of $${formData.hourlyRate}/hour added successfully!`);
+      handleClose();
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setError(err || "Failed to add parking rate");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
     setFormData({ hourlyRate: "" });
+    setError("");
+    setLoading(false);
     onClose();
   };
 
@@ -50,6 +66,11 @@ function ParkingRateModal({ isOpen, onClose }) {
             ></button>
           </div>
           <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label htmlFor="hourlyRate" className="form-label">
@@ -76,11 +97,12 @@ function ParkingRateModal({ isOpen, onClose }) {
                   type="button"
                   className="btn btn-secondary"
                   onClick={handleClose}
+                  disabled={loading}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Add Rate
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? "Adding..." : "Add Rate"}
                 </button>
               </div>
             </form>

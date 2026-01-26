@@ -1,11 +1,14 @@
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { operationService } from "../services/operationService";
 
-function EntryModal({ isOpen, onClose }) {
+function EntryModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     vrm: "",
     zone: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -13,19 +16,30 @@ function EntryModal({ isOpen, onClose }) {
       ...prev,
       [name]: value,
     }));
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Entry Data:", formData);
-    // TODO: Add API call here to submit entry data
-    // Example: axios.post('/api/vehicles', formData)
-    alert(`Vehicle ${formData.vrm} entry recorded!`);
-    handleClose();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await operationService.entry(formData);
+      alert(response.message || `Vehicle ${formData.vrm} entry recorded successfully!`);
+      handleClose();
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setError(err || "Failed to record vehicle entry");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
     setFormData({ vrm: "", zone: "" });
+    setError("");
+    setLoading(false);
     onClose();
   };
 
@@ -51,6 +65,11 @@ function EntryModal({ isOpen, onClose }) {
             ></button>
           </div>
           <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label htmlFor="vrm" className="form-label">
@@ -87,11 +106,12 @@ function EntryModal({ isOpen, onClose }) {
                   type="button"
                   className="btn btn-secondary"
                   onClick={handleClose}
+                  disabled={loading}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Record Entry
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? "Recording..." : "Record Entry"}
                 </button>
               </div>
             </form>
