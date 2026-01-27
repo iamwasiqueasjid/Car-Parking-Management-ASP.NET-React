@@ -26,16 +26,27 @@ namespace CarParking.Controllers
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst("Role")?.Value;
 
-            int? userId = null;
-            if (userRole == "Customer" && int.TryParse(userIdClaim, out int parsedUserId))
+            if (!int.TryParse(userIdClaim, out int currentUserId))
             {
-                userId = parsedUserId;
+                return Unauthorized();
+            }
+
+            int? customerId = null;
+            int? ownerId = null;
+
+            if (userRole == "Customer")
+            {
+                customerId = currentUserId;
+            }
+            else if (userRole == "Owner")
+            {
+                ownerId = currentUserId;
             }
 
             var normalizedVRM = addVehicleDTO.VRM.Replace(" ", "").ToLower();
 
             // Auto-link to customer if VRM is pre-registered (only for Owner entries)
-            if (userRole == "Owner" && userId == null)
+            if (userRole == "Owner" && customerId == null)
             {
                 var registeredUser = await _dbContext.Users
                     .Where(u => u.RegisteredVRMs != null && u.RegisteredVRMs.Contains(normalizedVRM))
@@ -43,7 +54,7 @@ namespace CarParking.Controllers
 
                 if (registeredUser != null)
                 {
-                    userId = registeredUser.UserId;
+                    customerId = registeredUser.UserId;
                 }
             }
 
@@ -66,7 +77,8 @@ namespace CarParking.Controllers
                 VRM = normalizedVRM,
                 EntryTime = DateTime.UtcNow,
                 Zone = addVehicleDTO.Zone?.ToUpper(),
-                UserId = userId
+                UserId = customerId,
+                OwnerId = ownerId
             };
 
             await _dbContext.Vehicles.AddAsync(vehicle);
@@ -74,16 +86,16 @@ namespace CarParking.Controllers
 
             // Get customer name if linked
             string? customerName = null;
-            if (userId.HasValue)
+            if (customerId.HasValue)
             {
-                var customer = await _dbContext.Users.FindAsync(userId.Value);
+                var customer = await _dbContext.Users.FindAsync(customerId.Value);
                 customerName = customer?.FullName;
             }
 
             return Ok(new
             {
                 success = true,
-                message = userId.HasValue
+                message = customerId.HasValue
                     ? $"Vehicle entry recorded and linked to {customerName}"
                     : "Vehicle entry recorded (walk-in customer)",
                 vehicle = new
@@ -169,9 +181,16 @@ namespace CarParking.Controllers
         [Authorize(Policy = "OwnerOnly")]
         public async Task<IActionResult> GetActiveVehicles()
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (!int.TryParse(userIdClaim, out int ownerId))
+            {
+                return Unauthorized();
+            }
+
             var activeVehicles = await _dbContext.Vehicles
                 .Include(v => v.User)
-                .Where(v => v.ExitTime == null)
+                .Where(v => v.ExitTime == null && v.OwnerId == ownerId)
                 .Select(v => new
                 {
                     v.VehicleId,

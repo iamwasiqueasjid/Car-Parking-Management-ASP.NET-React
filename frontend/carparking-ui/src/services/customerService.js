@@ -93,7 +93,10 @@ export const customerService = {
       });
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to process payment";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to process payment";
       console.error("Payment error:", error.response?.data || error);
       throw errorMessage;
     }

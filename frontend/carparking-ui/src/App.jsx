@@ -445,7 +445,7 @@ function App() {
                 <div className="row mt-4">
                   <div className="col-md-4 mb-3">
                     <div className="operation-card">
-                      <h5>🚪 Entry Management</h5>
+                      <h5>Entry Management</h5>
                       <p className="text-muted">Register new vehicle entries</p>
                       <button
                         className="btn btn-primary"
@@ -457,7 +457,7 @@ function App() {
                   </div>
                   <div className="col-md-4 mb-3">
                     <div className="operation-card">
-                      <h5>🚦 Exit Processing</h5>
+                      <h5>Exit Processing</h5>
                       <p className="text-muted">Process vehicle exits</p>
                       <button
                         className="btn btn-primary"
@@ -469,7 +469,7 @@ function App() {
                   </div>
                   <div className="col-md-4 mb-3">
                     <div className="operation-card">
-                      <h5>💰 Parking Rates</h5>
+                      <h5>Parking Rates</h5>
                       <p className="text-muted">Add new parking rates</p>
                       <button
                         className="btn btn-primary"

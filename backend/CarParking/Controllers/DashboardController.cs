@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace CarParking.Controllers
 {
@@ -22,24 +23,31 @@ namespace CarParking.Controllers
         {
             try
             {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!int.TryParse(userIdClaim, out int ownerId))
+                {
+                    return Unauthorized();
+                }
+
                 var today = DateTime.UtcNow.Date;
 
-                // Active vehicles
+                // Active vehicles for this owner
                 var activeVehicles = await _dbContext.Vehicles
-                    .Where(v => v.ExitTime == null)
+                    .Where(v => v.ExitTime == null && v.OwnerId == ownerId)
                     .CountAsync();
 
                 // Total capacity (you can make this configurable)
                 var totalCapacity = 200;
 
-                // Revenue today
+                // Revenue today for this owner
                 var revenueToday = await _dbContext.Payments
-                    .Where(p => p.PaymentTime.Date == today)
+                    .Where(p => p.PaymentTime.Date == today && p.Vehicle.OwnerId == ownerId)
                     .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-                // Average duration (in hours) - Fix null reference
+                // Average duration (in hours) for this owner's vehicles
                 var vehiclesWithExit = await _dbContext.Vehicles
-                    .Where(v => v.ExitTime != null && v.EntryTime.Date == today)
+                    .Where(v => v.ExitTime != null && v.EntryTime.Date == today && v.OwnerId == ownerId)
                     .Select(v => (v.ExitTime!.Value - v.EntryTime).TotalHours)
                     .ToListAsync();
 
@@ -86,6 +94,13 @@ namespace CarParking.Controllers
         {
             try
             {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!int.TryParse(userIdClaim, out int ownerId))
+                {
+                    return Unauthorized();
+                }
+
                 var today = DateTime.UtcNow.Date;
                 var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
                 
@@ -95,7 +110,7 @@ namespace CarParking.Controllers
                 {
                     var day = startOfWeek.AddDays(i);
                     var revenue = await _dbContext.Payments
-                        .Where(p => p.PaymentTime.Date == day)
+                        .Where(p => p.PaymentTime.Date == day && p.Vehicle.OwnerId == ownerId)
                         .SumAsync(p => (decimal?)p.Amount) ?? 0;
                     
                     weeklyData.Add(new
@@ -123,19 +138,26 @@ namespace CarParking.Controllers
         {
             try
             {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!int.TryParse(userIdClaim, out int ownerId))
+                {
+                    return Unauthorized();
+                }
+
                 var today = DateTime.UtcNow.Date;
                 
-                // Paid payments today
+                // Paid payments today for this owner
                 var paidPayments = await _dbContext.Payments
-                    .Where(p => p.PaymentTime.Date == today)
+                    .Where(p => p.PaymentTime.Date == today && p.Vehicle.OwnerId == ownerId)
                     .ToListAsync();
                 
                 var paidAmount = paidPayments.Sum(p => p.Amount);
                 var paidCount = paidPayments.Count;
                 
-                // Pending payments (vehicles that exited but haven't paid)
+                // Pending payments for this owner (vehicles that exited but haven't paid)
                 var pendingVehicles = await _dbContext.Vehicles
-                    .Where(v => v.ExitTime != null && !v.IsPaid && v.ExitTime.Value.Date == today)
+                    .Where(v => v.ExitTime != null && !v.IsPaid && v.ExitTime.Value.Date == today && v.OwnerId == ownerId)
                     .ToListAsync();
                 
                 var pendingAmount = pendingVehicles.Sum(v => v.ParkingFee ?? 0);

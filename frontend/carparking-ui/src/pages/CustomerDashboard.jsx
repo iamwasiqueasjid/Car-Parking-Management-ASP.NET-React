@@ -209,14 +209,19 @@ function CustomerDashboard() {
 
   const pendingPayments = parkingHistory.filter((h) => !h.isPaid) || [];
   const paidSessions = parkingHistory.filter((h) => h.isPaid) || [];
-  
+
   console.log("Pending payments count:", pendingPayments.length);
   console.log("Pending payments:", pendingPayments);
 
   const handlePayParkingFee = async (vehicleId, amount) => {
-    console.log("Payment initiated for vehicleId:", vehicleId, "amount:", amount);
+    console.log(
+      "Payment initiated for vehicleId:",
+      vehicleId,
+      "amount:",
+      amount,
+    );
     console.log("Current credit balance:", creditBalance);
-    
+
     if (creditBalance < amount) {
       showAlert(
         "Insufficient Credits",
@@ -233,7 +238,7 @@ function CustomerDashboard() {
         console.log("Payment confirmed, processing...");
         // Close the confirm modal first
         setConfirmModal({ ...confirmModal, isOpen: false });
-        
+
         try {
           const response = await customerService.payParkingFee(vehicleId);
           console.log("Payment response:", response);
@@ -837,7 +842,7 @@ function CustomerDashboard() {
                         className="btn btn-primary btn-lg"
                         onClick={() => setIsAddCreditModalOpen(true)}
                       >
-                        💳 Add Credits
+                        Add Credits
                       </button>
                     </div>
                   </div>
