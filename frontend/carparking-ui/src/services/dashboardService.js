@@ -1,7 +1,6 @@
 import api from "./api";
 
 export const dashboardService = {
-  // Owner Dashboard APIs
   getOwnerStats: async () => {
     try {
       const response = await api.get("/Dashboard/stats");

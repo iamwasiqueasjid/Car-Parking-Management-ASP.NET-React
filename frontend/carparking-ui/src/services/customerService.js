@@ -1,7 +1,6 @@
 import api from "./api";
 
 export const customerService = {
-  // Get registered VRMs for current customer
   getRegisteredVRMs: async () => {
     try {
       const response = await api.get("/Customer/registered-vrms");
@@ -10,8 +9,6 @@ export const customerService = {
       throw error.response?.data?.message || "Failed to fetch registered VRMs";
     }
   },
-
-  // Add a VRM to customer's registered vehicles
   addVRM: async (vrm) => {
     try {
       const response = await api.post("/Customer/add-vrm", { vrm });
@@ -21,7 +18,6 @@ export const customerService = {
     }
   },
 
-  // Remove a VRM from customer's registered vehicles
   removeVRM: async (vrm) => {
     try {
       const response = await api.delete(`/Customer/remove-vrm/${vrm}`);
@@ -31,7 +27,6 @@ export const customerService = {
     }
   },
 
-  // Get current parking status
   getCurrentParking: async () => {
     try {
       const response = await api.get("/Customer/current-parking");
@@ -40,8 +35,6 @@ export const customerService = {
       throw error.response?.data?.message || "Failed to fetch current parking";
     }
   },
-
-  // Get parking history
   getParkingHistory: async () => {
     try {
       const response = await api.get("/Customer/parking-history");
@@ -51,7 +44,6 @@ export const customerService = {
     }
   },
 
-  // Get customer stats
   getCustomerStats: async () => {
     try {
       const response = await api.get("/Customer/stats");
@@ -61,7 +53,6 @@ export const customerService = {
     }
   },
 
-  // Get credit balance
   getCreditBalance: async () => {
     try {
       const response = await api.get("/Customer/credit-balance");
@@ -71,7 +62,6 @@ export const customerService = {
     }
   },
 
-  // Add credit to account
   addCredit: async (amount, bankAccountNumber, cardNumber) => {
     try {
       const response = await api.post("/Customer/add-credit", {
@@ -85,7 +75,6 @@ export const customerService = {
     }
   },
 
-  // Pay parking fee using account credits
   payParkingFee: async (vehicleId) => {
     try {
       const response = await api.post("/Customer/pay-parking-fee", {
