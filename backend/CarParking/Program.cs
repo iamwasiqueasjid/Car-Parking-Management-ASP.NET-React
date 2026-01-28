@@ -8,9 +8,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =======================
 // Add services
-// =======================
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -24,11 +22,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
-
-// =======================
 // JWT Authentication
-// =======================
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -52,13 +46,10 @@ builder.Services.AddAuthentication(options =>
 
         ClockSkew = TimeSpan.Zero
     };
-
-    // Read JWT token from cookie instead of Authorization header
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            // Try to get token from cookie first
             if (context.Request.Cookies.ContainsKey("authToken"))
             {
                 context.Token = context.Request.Cookies["authToken"];
@@ -68,9 +59,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// =======================
 // Authorization (CUSTOM ROLES)
-// =======================
 
 builder.Services.AddAuthorization(options =>
 {
@@ -81,9 +70,7 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("Role", "Customer"));
 });
 
-// =======================
 // Swagger + JWT Support
-// =======================
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -121,15 +108,10 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// =======================
 // App services
-// =======================
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-
-// =======================
 // CORS
-// =======================
 
 builder.Services.AddCors(options =>
 {
@@ -144,9 +126,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// =======================
 // HTTP pipeline
-// =======================
 
 if (app.Environment.IsDevelopment())
 {
@@ -162,17 +142,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// =======================
 // Startup sanity check
-// =======================
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     if (!await db.ParkingRates.AnyAsync(r => r.IsActive))
     {
-        Console.WriteLine("⚠ WARNING: No active parking rate found!");
+        Console.WriteLine("No active parking rate found!");
     }
 }
 

@@ -3,7 +3,6 @@ import api from "./api";
 let currentUser = null;
 
 export const authService = {
-  // Register new user
   register: async (userData) => {
     try {
       const roleValue = userData.role === "Owner" ? 1 : 0;
@@ -16,7 +15,6 @@ export const authService = {
         role: roleValue,
       });
 
-      // Store user data in memory (token is in HttpOnly cookie)
       currentUser = response.data;
       return response.data;
     } catch (error) {
@@ -24,7 +22,6 @@ export const authService = {
     }
   },
 
-  // Login user
   login: async (credentials) => {
     try {
       const response = await api.post("/Auth/login", {
@@ -32,7 +29,6 @@ export const authService = {
         password: credentials.password,
       });
 
-      // Store user data in memory (token is in HttpOnly cookie)
       currentUser = response.data;
       return response.data;
     } catch (error) {
@@ -40,25 +36,22 @@ export const authService = {
     }
   },
 
-  // Logout user
   logout: async () => {
     try {
       await api.post("/Auth/logout");
       currentUser = null;
     } catch (error) {
-      // Even if logout fails, clear user data
       currentUser = null;
     }
   },
 
-  // Get current user from API
   getCurrentUser: async () => {
     if (currentUser) {
       return currentUser;
     }
 
     try {
-      const response = await api.get("/Auth/me");
+      const response = await api.get("/User/me");
       currentUser = response.data;
       return currentUser;
     } catch (error) {
@@ -66,8 +59,6 @@ export const authService = {
       return null;
     }
   },
-
-  // Check if user is authenticated
   isAuthenticated: async () => {
     const user = await authService.getCurrentUser();
     return !!user;

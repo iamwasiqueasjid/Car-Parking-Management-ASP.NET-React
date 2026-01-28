@@ -25,7 +25,7 @@ namespace CarParking.Models
         [ForeignKey("UserId")]
         public User? User { get; set; }
 
-        // Owner who recorded this vehicle entry/exit
+        // Owner of the parking lot where vehicle entered
         public int? OwnerId { get; set; }
 
         public string? Zone { get; set; }

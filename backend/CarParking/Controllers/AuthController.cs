@@ -128,36 +128,6 @@ namespace CarParking.Controllers
             return Ok(response);
         }
 
-        [HttpGet("me")]
-        [Authorize]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
-                return Unauthorized();
-            }
-
-            var user = await _dbContext.Users.FindAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(new { message = "User not found" });
-            }
-
-            var userDto = new UserDto
-            {
-                UserId = user.UserId,
-                Email = user.Email,
-                FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber,
-                Role = user.Role
-            };
-
-            return Ok(userDto);
-        }
-
         [HttpPost("logout")]
         public IActionResult Logout()
         {
@@ -165,36 +135,5 @@ namespace CarParking.Controllers
             Response.Cookies.Delete("authToken");
             return Ok(new { message = "Logged out successfully" });
         }
-
-        [HttpPut("change-password")]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
-                return Unauthorized();
-            }
-
-            var user = await _dbContext.Users.FindAsync(userId);
-
-            if (user == null)
-            {
-                return NotFound(new { message = "User not found" });
-            }
-
-            if (!_authService.VerifyPassword(dto.OldPassword, user.PasswordHash))
-            {
-                return BadRequest(new { message = "Current password is incorrect" });
-            }
-
-            user.PasswordHash = _authService.HashPassword(dto.NewPassword);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new { message = "Password changed successfully" });
-        }
     }
-
-
 }
