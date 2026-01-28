@@ -199,7 +199,6 @@ namespace CarParking.Controllers
 
             var normalizedVRM = request.VRM.Replace(" ", "").ToLower();
 
-            // Check if VRM already registered by another user
             var existingUser = await _dbContext.Users
                 .Where(u => u.UserId != userId && u.RegisteredVRMs != null && u.RegisteredVRMs.Contains(normalizedVRM))
                 .FirstOrDefaultAsync();
@@ -315,8 +314,8 @@ namespace CarParking.Controllers
                 return NotFound(new { message = "User not found" });
             }
 
-            // Simulate bank transaction (in real app, integrate with payment gateway)
-            // For simulation, we just add the credit
+            // Simulating Bank transaction
+            // For simulation, I have just added the credit
             user.CreditBalance += addCreditDto.Amount;
             await _dbContext.SaveChangesAsync();
 
@@ -396,7 +395,6 @@ namespace CarParking.Controllers
 
                 _dbContext.Payments.Add(payment);
                 
-                // Explicitly mark entities as modified
                 _dbContext.Entry(user).State = EntityState.Modified;
                 _dbContext.Entry(vehicle).State = EntityState.Modified;
                 

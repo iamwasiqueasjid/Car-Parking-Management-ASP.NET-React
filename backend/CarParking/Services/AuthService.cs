@@ -18,7 +18,7 @@ namespace CarParking.Services
 
         public string HashPassword(string password)
         {
-            // Use BCrypt for password hashing
+            // Hashing password
             return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
