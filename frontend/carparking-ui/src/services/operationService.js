@@ -1,7 +1,6 @@
 import api from "./api";
 
 export const operationService = {
-  // Record vehicle entry
   entry: async (vehicleData) => {
     try {
       const response = await api.post("/Movement/record-entry", {
@@ -14,7 +13,6 @@ export const operationService = {
     }
   },
 
-  // Record vehicle exit
   exit: async (vrm) => {
     try {
       const response = await api.post(`/Movement/record-exit/${vrm}`);
@@ -24,7 +22,6 @@ export const operationService = {
     }
   },
 
-  // Add new parking rate
   addRate: async (rateData) => {
     try {
       const response = await api.post("/ParkingRate/add-rate", {
@@ -35,8 +32,6 @@ export const operationService = {
       throw error.response?.data?.message || "Failed to add parking rate";
     }
   },
-
-  // Get all active vehicles (for owner dashboard)
   getActiveVehicles: async () => {
     try {
       const response = await api.get("/Movement/active-vehicles");
@@ -45,8 +40,6 @@ export const operationService = {
       throw error.response?.data?.message || "Failed to fetch active vehicles";
     }
   },
-
-  // Get exit logs (for owner dashboard)
   getExitLogs: async () => {
     try {
       const response = await api.get("/Movement/exit-logs");
@@ -55,8 +48,6 @@ export const operationService = {
       throw error.response?.data?.message || "Failed to fetch exit logs";
     }
   },
-
-  // Get current parking rate
   getCurrentRate: async () => {
     try {
       const response = await api.get("/ParkingRate/current-rate");
@@ -66,7 +57,6 @@ export const operationService = {
     }
   },
 
-  // Get all parking rates
   getAllRates: async () => {
     try {
       const response = await api.get("/ParkingRate/get-rates");

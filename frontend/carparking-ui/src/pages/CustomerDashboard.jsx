@@ -30,7 +30,7 @@ function CustomerDashboard() {
     type: "warning",
   });
 
-  // Alert modal state (for success/error messages)
+  // Alert modal state
   const [alertModal, setAlertModal] = useState({
     isOpen: false,
     title: "",
@@ -236,7 +236,7 @@ function CustomerDashboard() {
       `Pay $${amount.toFixed(2)} using your account credits?`,
       async () => {
         console.log("Payment confirmed, processing...");
-        // Close the confirm modal first
+
         setConfirmModal({ ...confirmModal, isOpen: false });
 
         try {

@@ -10,7 +10,7 @@ function Register() {
     password: "",
     fullName: "",
     phoneNumber: "",
-    role: "Owner", // Default to Owner
+    role: "Owner",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ function Register() {
       ...prev,
       [name]: value,
     }));
-    setError(""); // Clear error on input change
+    setError("");
   };
 
   const handleRoleSelect = (role) => {
@@ -46,8 +46,6 @@ function Register() {
         role: formData.role,
       });
 
-      // Navigate based on user role (0 = Customer, 1 = Owner)
-      // Response now contains user data directly (no nested user object)
       if (response.role === 1) {
         navigate("/dashboard"); // Owner dashboard
       } else {

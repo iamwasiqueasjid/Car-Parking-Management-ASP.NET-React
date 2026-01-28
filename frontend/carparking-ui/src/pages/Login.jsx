@@ -33,8 +33,6 @@ function Login() {
         email: formData.email,
         password: formData.password,
       });
-
-      // Response now contains user data directly (no token in response)
       if (response.role === 1) {
         navigate("/dashboard");
       } else {
