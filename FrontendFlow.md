@@ -1,4 +1,4 @@
-# Frontend User Flow Documentation
+# Frontend User Flow (Owner/Customer)
 
 Complete user flow guide for the Car Parking Management System, covering both Owner and Customer journeys.
 
@@ -39,10 +39,6 @@ flowchart TD
     Analytics --> ViewRevenue[View Revenue Charts]
     Analytics --> ViewPayments[View Payment History]
     Analytics --> ViewExits[View Exit Logs]
-
-    style Dashboard fill:#e1f5ff
-    style Exit fill:#fff4e1
-    style DeductCredit fill:#e1ffe1
 ```
 
 ### Customer Flow Diagram
@@ -75,8 +71,4 @@ flowchart TD
     FilterHistory --> ByDate[By Date Range]
     FilterHistory --> ByVehicle[By Vehicle]
     FilterHistory --> ByStatus[By Payment Status]
-
-    style Dashboard fill:#e1f5ff
-    style AddCredit fill:#e1ffe1
-    style UpdateBalance fill:#e1ffe1
 ```
