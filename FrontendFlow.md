@@ -20,7 +20,11 @@ flowchart TD
     Dashboard --> Analytics[View Analytics & Payments]
 
     Entry --> EnterVRM1[Enter VRM]
-    EnterVRM1 --> CreateSession[Create Parking Session]
+    EnterVRM1 --> AutoLink{VRM Pre-registered?}
+    AutoLink -->|Yes| LinkCustomer[Auto-link to Customer]
+    AutoLink -->|No| WalkIn[Mark as Walk-in]
+    LinkCustomer --> CreateSession[Create Parking Session]
+    WalkIn --> CreateSession
     CreateSession --> Dashboard
 
     Rates --> SetRate[Set Hourly Rate]
@@ -28,17 +32,30 @@ flowchart TD
     ActivateRate --> Dashboard
 
     Exit --> EnterVRM2[Enter VRM]
-    EnterVRM2 --> CalcFee[Calculate Parking Fee]
-    CalcFee --> CheckReg{Vehicle Registered?}
-    CheckReg -->|Yes| DeductCredit[Deduct from Customer Credit]
-    CheckReg -->|No| ManualPayment[Manual Payment at Exit]
-    DeductCredit --> UpdateDashboard[Update Dashboard Stats]
-    ManualPayment --> UpdateDashboard
+    EnterVRM2 --> FetchVehicle[Fetch Vehicle Details]
+    FetchVehicle --> ShowCustomerType[Show Customer Type]
+    ShowCustomerType --> CalcFee[Calculate Parking Fee]
+    CalcFee --> ChoosePayment{Select Payment Type}
+
+    ChoosePayment -->|On-Spot Payment| SelectMethod[Select Cash/Card]
+    SelectMethod --> RecordPayment[Record Manual Payment]
+    RecordPayment --> MarkPaid[Mark as Paid]
+    MarkPaid --> UpdateDashboard[Update Dashboard Stats]
+
+    ChoosePayment -->|User Account| CheckLinked{Customer has account?}
+    CheckLinked -->|Yes| AllowUserPayment[Allow User Account Option]
+    CheckLinked -->|No| BlockOption[Option Locked - Walk-in Only]
+    BlockOption --> SelectMethod
+    AllowUserPayment --> MarkPending[Mark as Pending]
+    MarkPending --> NotifyCustomer[Customer Can Pay Later]
+    NotifyCustomer --> UpdateDashboard
+
     UpdateDashboard --> Dashboard
 
     Analytics --> ViewRevenue[View Revenue Charts]
     Analytics --> ViewPayments[View Payment History]
     Analytics --> ViewExits[View Exit Logs]
+    ViewExits --> ShowStatus[Show Paid/Pending Status]
 ```
 
 ### Customer Flow Diagram
@@ -53,10 +70,12 @@ flowchart TD
     Dashboard --> AddCredit[Add Credit]
     Dashboard --> ViewActive[View Active Parking]
     Dashboard --> ViewHistory[View Parking History]
+    Dashboard --> PayFees[Pay Pending Fees]
 
     AddVehicle --> EnterVRM[Enter VRM]
     EnterVRM --> SaveVehicle[Save to Registered Vehicles]
-    SaveVehicle --> Dashboard
+    SaveVehicle --> AutoRecognize[Auto-recognized at Entry]
+    AutoRecognize --> Dashboard
 
     AddCredit --> EnterAmount[Enter Amount]
     EnterAmount --> ProcessPayment[Process Payment]
@@ -71,4 +90,13 @@ flowchart TD
     FilterHistory --> ByDate[By Date Range]
     FilterHistory --> ByVehicle[By Vehicle]
     FilterHistory --> ByStatus[By Payment Status]
+
+    PayFees --> ShowPending[Show Pending Parking Fees]
+    ShowPending --> CheckBalance{Sufficient Balance?}
+    CheckBalance -->|Yes| DeductFee[Deduct from Credit Balance]
+    CheckBalance -->|No| ShowError[Show Insufficient Balance]
+    ShowError --> AddCredit
+    DeductFee --> MarkAsPaid[Mark Fee as Paid]
+    MarkAsPaid --> UpdateOwnerDashboard[Update Owner Dashboard]
+    UpdateOwnerDashboard --> Dashboard
 ```
