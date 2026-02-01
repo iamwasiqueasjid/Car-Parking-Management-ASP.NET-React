@@ -89,6 +89,7 @@ namespace CarParking.Controllers
                 Amount = processPayment.Amount,
                 PaymentTime = DateTime.UtcNow,
                 PaymentMethod = paymentMethod,
+                PaymentType = "OnSpot"
             };
 
             vehicle.IsPaid = true;
@@ -195,6 +196,109 @@ namespace CarParking.Controllers
                 {
                     success = false,
                     message = "Error retrieving weekly revenue",
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("pay-parking-fee/{vehicleId}")]
+        [Authorize(Policy = "CustomerOnly")]
+        public async Task<IActionResult> PayParkingFee(int vehicleId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized();
+                }
+
+                var vehicle = await _dbContext.Vehicles
+                    .Include(v => v.User)
+                    .FirstOrDefaultAsync(v => v.VehicleId == vehicleId && v.UserId == userId);
+
+                if (vehicle == null)
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "Vehicle not found or does not belong to you"
+                    });
+                }
+
+                if (vehicle.IsPaid)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "This parking fee has already been paid"
+                    });
+                }
+
+                if (vehicle.ExitTime == null)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Cannot pay for a vehicle that hasn't exited yet"
+                    });
+                }
+
+                var user = await _dbContext.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "User not found"
+                    });
+                }
+
+                if (user.CreditBalance < vehicle.ParkingFee)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = $"Insufficient credit balance. Required: ${vehicle.ParkingFee:F2}, Available: ${user.CreditBalance:F2}"
+                    });
+                }
+
+                // Deduct from user account
+                user.CreditBalance -= vehicle.ParkingFee.Value;
+                vehicle.IsPaid = true;
+
+                // Create payment record
+                var payment = new Payment
+                {
+                    VehicleId = vehicle.VehicleId,
+                    Amount = vehicle.ParkingFee.Value,
+                    PaymentTime = DateTime.UtcNow,
+                    PaymentMethod = "CreditBalance",
+                    PaymentType = "UserAccount"
+                };
+
+                await _dbContext.Payments.AddAsync(payment);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Parking fee paid successfully",
+                    payment = new
+                    {
+                        paymentId = payment.PaymentId,
+                        amount = payment.Amount,
+                        paymentTime = payment.PaymentTime,
+                        remainingBalance = user.CreditBalance
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error processing payment",
                     error = ex.Message
                 });
             }

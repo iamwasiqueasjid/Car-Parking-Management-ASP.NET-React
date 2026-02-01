@@ -111,13 +111,14 @@ namespace CarParking.Controllers
         }
 
         [HttpPost("record-exit/{vrm}")]
-        public async Task<IActionResult> RecordExit(string vrm)
+        public async Task<IActionResult> RecordExit(string vrm, [FromBody] RecordExitDTO exitDTO)
         {
             try
             {
                 vrm = vrm.Replace(" ", "").ToLower();
 
                 var vehicle = await _dbContext.Vehicles
+                    .Include(v => v.User)
                     .FirstOrDefaultAsync(v => v.VRM == vrm && v.ExitTime == null);
 
                 if (vehicle == null)
@@ -148,12 +149,88 @@ namespace CarParking.Controllers
                 var duration = (vehicle.ExitTime.Value - vehicle.EntryTime).TotalHours;
                 vehicle.ParkingFee = (decimal)Math.Ceiling(duration) * parkingRate.HourlyRate;
 
+                // Validate payment type
+                if (exitDTO.PaymentType != "OnSpot" && exitDTO.PaymentType != "UserAccount")
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Payment type must be either 'OnSpot' or 'UserAccount'"
+                    });
+                }
+
+                // If UserAccount payment, just verify user exists - payment will be done by user later
+                if (exitDTO.PaymentType == "UserAccount")
+                {
+                    if (vehicle.UserId == null)
+                    {
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = "User account payment is not available for walk-in customers. Please use on-spot payment."
+                        });
+                    }
+
+                    var user = await _dbContext.Users.FindAsync(vehicle.UserId.Value);
+                    if (user == null)
+                    {
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = "User account not found"
+                        });
+                    }
+
+                    // Do NOT deduct from user account or mark as paid
+                    // User will pay later from their dashboard
+                    // Just record that this is a user account payment
+                    vehicle.IsPaid = false;
+                }
+                else if (exitDTO.PaymentType == "OnSpot")
+                {
+                    // Validate payment method for on-spot payment
+                    if (string.IsNullOrWhiteSpace(exitDTO.PaymentMethod))
+                    {
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = "Payment method (Cash or Card) is required for on-spot payment"
+                        });
+                    }
+
+                    var paymentMethod = exitDTO.PaymentMethod.ToLower();
+                    if (paymentMethod != "cash" && paymentMethod != "card")
+                    {
+                        return BadRequest(new
+                        {
+                            success = false,
+                            message = "Payment method must be 'Cash' or 'Card' for on-spot payment"
+                        });
+                    }
+
+                    vehicle.IsPaid = true;
+
+                    // Create payment record for on-spot payment
+                    var payment = new Payment
+                    {
+                        VehicleId = vehicle.VehicleId,
+                        Amount = vehicle.ParkingFee.Value,
+                        PaymentTime = DateTime.UtcNow,
+                        PaymentMethod = paymentMethod,
+                        PaymentType = "OnSpot"
+                    };
+
+                    await _dbContext.Payments.AddAsync(payment);
+                }
+
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(new
                 {
                     success = true,
-                    message = "Vehicle exit recorded successfully",
+                    message = exitDTO.PaymentType == "UserAccount" 
+                        ? "Vehicle exit recorded. User can pay from their account." 
+                        : "Vehicle exit recorded with on-spot payment",
                     vehicle = new
                     {
                         vehicle.VehicleId,
@@ -162,7 +239,9 @@ namespace CarParking.Controllers
                         vehicle.ExitTime,
                         Duration = vehicle.ExitTime.Value - vehicle.EntryTime,
                         vehicle.ParkingFee,
-                        vehicle.IsPaid
+                        vehicle.IsPaid,
+                        PaymentType = exitDTO.PaymentType,
+                        CustomerName = vehicle.User?.FullName
                     }
                 });
             }

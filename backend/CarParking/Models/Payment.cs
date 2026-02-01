@@ -16,5 +16,10 @@ namespace CarParking.Models
         public DateTime PaymentTime { get; set; }
 
         public required string PaymentMethod { get; set; }
+
+        /// <summary>
+        /// Payment Type: "OnSpot" for walk-in customers, "UserAccount" for registered users
+        /// </summary>
+        public string PaymentType { get; set; } = "OnSpot";
     }
 }

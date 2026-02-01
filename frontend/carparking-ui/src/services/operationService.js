@@ -13,9 +13,21 @@ export const operationService = {
     }
   },
 
-  exit: async (vrm) => {
+  exit: async (vrm, paymentType, paymentMethod) => {
     try {
-      const response = await api.post(`/Movement/record-exit/${vrm}`);
+      const requestBody = {
+        paymentType: paymentType,
+      };
+
+      // Only include paymentMethod if it's OnSpot payment
+      if (paymentType === "OnSpot" && paymentMethod) {
+        requestBody.paymentMethod = paymentMethod;
+      }
+
+      const response = await api.post(
+        `/Movement/record-exit/${vrm}`,
+        requestBody,
+      );
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || "Failed to record vehicle exit";

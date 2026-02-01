@@ -100,7 +100,12 @@ namespace CarParking.Tests.Controllers
             var controller = new MovementController(dbContext);
 
             // Act
-            var result = await controller.RecordExit("ABC 123");
+            var exitDTO = new RecordExitDTO
+            {
+                PaymentType = "OnSpot",
+                PaymentMethod = "Cash"
+            };
+            var result = await controller.RecordExit("ABC 123", exitDTO);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -108,6 +113,7 @@ namespace CarParking.Tests.Controllers
             Assert.NotNull(updatedVehicle);
             Assert.NotNull(updatedVehicle.ExitTime);
             Assert.True(updatedVehicle.ParkingFee > 0);
+            Assert.True(updatedVehicle.IsPaid);
         }
 
         #endregion

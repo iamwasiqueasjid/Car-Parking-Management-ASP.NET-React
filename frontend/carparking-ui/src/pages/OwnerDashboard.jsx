@@ -434,16 +434,6 @@ function OwnerDashboard() {
                             </tbody>
                           </table>
                         </div>
-                        <div className="card shadow-sm rounded-3 p-3 mb-3">
-                          <h6 className="fw-bold mb-3">Quick Actions</h6>
-                          <button className="btn report mb-2">
-                            Generate Report
-                          </button>
-                          <button className="btn data mb-2">Export Data</button>
-                          <button className="btn settings mb-2 ">
-                            View Settings
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </>
